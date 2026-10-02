@@ -1,0 +1,35 @@
+{
+ "dados_abertos": {
+  "prog": {
+   "ultimo_ano": 2024,
+   "modificado": {
+    "2017-a-2020-programas-da-pos-graduacao-stricto-sensu-no-brasil": "2024-12-10T18:21:54.341750",
+    "2021-a-2024-programas-da-pos-graduacao-stricto-sensu-no-brasil": "2025-12-12T13:13:14.891871",
+    "programas-da-pos-graduacao-stricto-census-do-brasil-de-2013-a-2015": "2024-12-09T17:33:56.309406"
+   }
+  },
+  "disc": {
+   "ultimo_ano": 2024,
+   "modificado": {
+    "2021-a-2024-discentes-da-pos-graduacao-stricto-sensu-do-brasil": "2025-12-12T13:20:19.129988",
+    "discentes-da-pos-graduacao-stricto-sensu-do-brasil-2013-a-2016": "2024-12-09T17:22:32.777060",
+    "discentes-da-pos-graduacao-stricto-sensu-do-brasil-2017-a-2019": "2024-12-03T12:00:19.370049"
+   }
+  },
+  "doc": {
+   "ultimo_ano": 2024,
+   "modificado": {
+    "2017-a-2020-docentes-da-pos-graduacao-stricto-sensu-no-brasil": "2024-12-09T17:27:36.239733",
+    "2021-a-2024-docentes-da-pos-graduacao-stricto-sensu-no-brasil": "2025-12-15T11:39:02.235538",
+    "docentes-da-pos-graduacao-stricto-sensu-do-brasil-2013-a-2016": "2024-12-03T11:41:11.148749"
+   }
+  }
+ },
+ "quadrienal": {
+  "links": [
+   "/capes/pt-br/centrais-de-conteudo/documentos/avaliacao/27052026_Resultado_2826627_Resultados_da_Avaliacao_Quadrienal_2025_para_publicacao_25_5___senha.xlsx/@@download/file"
+  ],
+  "pagina_modificada": "03/07/2026 16:18",
+  "assinatura": "5289e26dd1ec1fc7969f814e82505d4c"
+ }
+}

@@ -1,0 +1,253 @@
+{
+ "geral": "https://www.propg.ufscar.br/pt-br/pos-na-ufscar/programas",
+ "sites": {
+  "33001014076P0": {
+   "url": "https://www.ppga.ufscar.br/",
+   "status": "ok"
+  },
+  "33001014034P5": {
+   "url": "https://www.ppgaa.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014022P7": {
+   "url": "https://www.ppgadr.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014023P3": {
+   "url": "http://www.ppgas.ufscar.br",
+   "status": "ok"
+  },
+  "33001014020P4": {
+   "url": "https://www.ppgbiotec.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014042P8": {
+   "url": "https://www.ppgbma.ufscar.br/",
+   "status": "nao_respondeu"
+  },
+  "33001014026P2": {
+   "url": "https://www.ppgpol.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014008P4": {
+   "url": "https://www.ppgcc.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014044P0": {
+   "url": "https://www.ppgcc.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014052P3": {
+   "url": "https://www.ppgci.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014032P2": {
+   "url": "https://www.ppgcm.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014004P9": {
+   "url": "https://www.ppgcem.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014027P9": {
+   "url": "https://www.ppgcts.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014047P0": {
+   "url": "http://www.ppgcam.ufscar.br",
+   "status": "ok"
+  },
+  "33001014037P4": {
+   "url": "http://www.pipgcf.ufscar.br",
+   "status": "ok"
+  },
+  "33001014048P6": {
+   "url": "https://www.ppgcfau.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014003P2": {
+   "url": "http://www.ppgern.ufscar.br",
+   "status": "ok"
+  },
+  "33001014035P1": {
+   "url": "https://www.ppgec.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014001P0": {
+   "url": "https://www.ppge.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014043P4": {
+   "url": "https://www.ppged.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014070P1": {
+   "url": "https://www.ppgedcm-ar.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014002P6": {
+   "url": "https://www.ppgees.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014028P5": {
+   "url": "http://www.ppgenf.ufscar.br",
+   "status": "ok"
+  },
+  "33001014013P8": {
+   "url": "https://www.ppgep.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014039P7": {
+   "url": "https://www.ppgeps.ufscar.br/",
+   "status": "ok"
+  },
+  "33001014074P7": {
+   "url": "https://www.ppgpep.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014072P4": {
+   "url": "http://www.ppgee.ufscar.br",
+   "status": "ok"
+  },
+  "33001014073P0": {
+   "url": "https://www.ppgemec.ufscar.br/",
+   "status": "ok"
+  },
+  "33001014006P1": {
+   "url": "https://www.ppgeq.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014015P0": {
+   "url": "https://www.ppgeu.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014029P1": {
+   "url": "https://www.ppgece.ufscar.br/",
+   "status": "nao_respondeu"
+  },
+  "33001014017P3": {
+   "url": "https://www.pipges.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014045P7": {
+   "url": "https://www.pipges.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014018P0": {
+   "url": "https://ppgeciv.ufscar.br/",
+   "status": "ok"
+  },
+  "33001014075P3": {
+   "url": "https://www.ppgech.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014041P1": {
+   "url": "https://www.ppglit.ufscar.br/pt-br/front-page",
+   "status": "ok"
+  },
+  "33001014010P9": {
+   "url": "https://www.ppgfil.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014016P7": {
+   "url": "http://www.ppgft.ufscar.br",
+   "status": "ok"
+  },
+  "33001014011P5": {
+   "url": "https://www.ppgf.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014012P1": {
+   "url": "http://www.ppggev.ufscar.br/",
+   "status": "ok"
+  },
+  "33001014071P8": {
+   "url": "https://www.ppggeo.ufscar.br/",
+   "status": "ok"
+  },
+  "33001014069P3": {
+   "url": "http://www.ppggero.ufscar.br",
+   "status": "ok"
+  },
+  "33001014038P0": {
+   "url": "http://www.gestaodaclinica.ufscar.br",
+   "status": "ok"
+  },
+  "33001014046P3": {
+   "url": "https://www.ppgads.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014030P0": {
+   "url": "https://www.ppgis.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014021P0": {
+   "url": "https://www.ppgl.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014007P8": {
+   "url": "https://www.dm.ufscar.br/ppgm/",
+   "status": "nao_respondeu"
+  },
+  "33001014050P0": {
+   "url": "https://www.ppgpur.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014077P6": {
+   "url": "https://www.ppgpcm.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014051P7": {
+   "url": "https://www.ppgpvba.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014049P2": {
+   "url": "https://www.ppgpe.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014031P6": {
+   "url": "https://www.ppgpsi.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014005P5": {
+   "url": "https://www.ppgq.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014024P0": {
+   "url": "https://www.ppgpq.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014025P6": {
+   "url": "https://www.ppgs.ufscar.br/",
+   "status": "ok"
+  },
+  "33001014040P5": {
+   "url": "https://www.ppgsga.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014036P8": {
+   "url": "http://www.ppgto.ufscar.br",
+   "status": "ok"
+  },
+  "31075010001P2": {
+   "url": "https://www.profmat.ufscar.br/index.php",
+   "status": "nao_respondeu"
+  },
+  "33283010001P5": {
+   "url": "https://www.mnpefsorocaba.ufscar.br/",
+   "status": "ok"
+  },
+  "33004137068P8": {
+   "url": "http://www.proef.ufscar.br/",
+   "status": "ok"
+  },
+  "40001016170P6": {
+   "url": "https://www.prof-filo.ufscar.br/pt-br",
+   "status": "ok"
+  },
+  "33001014033P9": {
+   "url": "https://www.propg.ufscar.br/pt-br/pos-na-ufscar/programas",
+   "status": "pagina_geral"
+  }
+ }
+}

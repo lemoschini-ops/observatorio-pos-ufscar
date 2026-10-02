@@ -1,0 +1,209 @@
+/* Identidade visual inspirada no portal da ProPlan/UFSCar (tema Plone "zip-ufscar"):
+   faixa azul-marinho, cabeçalho branco, menu cinza em caixa alta, títulos em Montserrat
+   com barra dourada, fundo #fafafa, texto #4d4d4d, fonte Open Sans. */
+:root{
+  --azul:#244578;--azul-esc:#17345e;--azul-cl:#086ca3;--ciano:#64bee8;--ouro:#ffd700;
+  --bg:#fafafa;--card:#fff;--ink:#4d4d4d;--tit:#244578;--mut:#6b6b6b;--line:#e5e5e5;--soft:#f2f1f1;
+  --c-u:#244578;--c-se:#2e9fd6;--c-br:#8c8c8c;--ok:#1e7d46;--bad:#c0392b;--link:#086ca3;
+  --menu:#e6e6e6;--menu-ink:#484848;
+  --sombra:0 2px 6px rgba(0,0,0,.12);
+  --fs:15px;
+}
+:root[data-theme=dark]{
+  --bg:#0b1730;--card:#12234a;--ink:#e8edf6;--tit:#ffd700;--mut:#a9b6cf;--line:#26407a;--soft:#183060;
+  --c-u:#ffd700;--c-se:#64bee8;--c-br:#b5bfd0;--ok:#5fd694;--bad:#ff8a80;--link:#8fd3f4;
+  --menu:#0f2147;--menu-ink:#e8edf6;--sombra:none;
+}
+*{box-sizing:border-box}
+html{font-size:var(--fs);scroll-padding-top:60px}
+body{margin:0;background:var(--bg);color:var(--ink);font:1rem/1.55 "Open Sans",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--link)}
+:focus-visible{outline:3px solid var(--ouro);outline-offset:2px}
+
+/* faixa superior */
+.gov{background:var(--azul);color:#fff;font-size:.8rem}
+:root[data-theme=dark] .gov{background:#06102a}
+.gov-in{display:flex;justify-content:space-between;align-items:center;min-height:30px;gap:12px}
+.gov-acoes{display:flex;gap:2px}
+.gov-acoes button{background:none;border:0;color:#fff;padding:4px 10px;font-size:.8rem;font-weight:600}
+.gov-acoes button:hover{background:rgba(255,255,255,.15)}
+/* cabeçalho branco */
+.cab{background:#fff;border-bottom:1px solid var(--line)}
+:root[data-theme=dark] .cab{background:#0f2147}
+.cab-in{display:flex;justify-content:space-between;align-items:center;gap:20px;padding-top:20px;padding-bottom:20px;flex-wrap:wrap}
+.cab-marca{font:700 1.7rem/1.1 Montserrat,"Open Sans",sans-serif;color:var(--azul);letter-spacing:-.01em}
+:root[data-theme=dark] .cab-marca{color:var(--ouro)}
+.cab-marca small{display:block;font:400 .95rem "Open Sans",sans-serif;color:var(--ink);margin-top:5px;letter-spacing:0}
+.cab-ies-x{font:700 1.15rem Montserrat,"Open Sans",sans-serif;color:var(--azul);text-align:right;line-height:1.2}
+:root[data-theme=dark] .cab-ies{color:#fff}
+.cab-ies small{display:block;font:400 .78rem "Open Sans",sans-serif;color:var(--mut);margin-top:3px}
+/* menu e filtros fixos */
+.fixo{display:contents}
+.menu{background:var(--menu);position:sticky;top:0;z-index:30;box-shadow:0 2px 4px rgba(0,0,0,.12)}
+.abas{display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+.abas button{background:none;border:0;border-bottom:4px solid transparent;color:var(--menu-ink);padding:14px 13px 10px;white-space:nowrap;font:700 .88rem "Open Sans",sans-serif;text-transform:uppercase}
+.abas button:hover{background:rgba(36,69,120,.1)}
+.abas button.on{color:var(--azul);border-bottom-color:var(--ouro);background:rgba(255,255,255,.55)}
+:root[data-theme=dark] .abas button.on{color:var(--ouro);background:rgba(255,255,255,.08)}
+.barra{background:var(--card);border-bottom:1px solid var(--line)}
+.barra-in{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:end;padding-top:8px;padding-bottom:8px}
+.barra label{display:flex;flex-direction:column;font-size:.74rem;color:var(--mut);gap:3px;font-weight:600}
+.barra label.chk{flex-direction:row;align-items:center;gap:6px;font-size:.86rem;color:var(--ink);padding-bottom:6px;font-weight:400}
+.barra label.ano{min-width:170px}.barra label.ano b{color:var(--tit);margin-left:4px}
+select,input[type=search],input[type=text]{font:inherit;color:var(--ink);background:var(--card);border:1px solid #ccc;border-radius:4px;padding:6px 8px;min-width:150px}
+:root[data-theme=dark] select,:root[data-theme=dark] input[type=search]{border-color:var(--line)}
+input[type=range]{accent-color:var(--azul);width:100%}
+:root[data-theme=dark] input[type=range]{accent-color:var(--ouro)}
+.seg{display:inline-flex;border:1px solid var(--azul);border-radius:4px;overflow:hidden}
+.seg button{background:var(--card);border:0;padding:6px 12px;font-size:.86rem;border-right:1px solid var(--azul);color:var(--azul);font-weight:600}
+.seg button:last-child{border:0}.seg button.on{background:var(--azul);color:#fff}
+:root[data-theme=dark] .seg{border-color:var(--ouro)}
+:root[data-theme=dark] .seg button{color:var(--ouro);border-color:var(--ouro)}
+:root[data-theme=dark] .seg button.on{background:var(--ouro);color:#0b1730}
+.link{background:none;border:0;color:var(--link);padding:6px 0;font-size:.86rem;margin-left:auto;text-decoration:underline}
+
+main{padding-top:20px;padding-bottom:28px;min-height:60vh}
+.carregando{padding:60px 0;text-align:center;color:var(--mut)}
+.tab[hidden]{display:none}
+/* títulos de seção: barra dourada à esquerda, como no portal */
+h2.sec{font:700 1.25rem/1.25 Montserrat,"Open Sans",sans-serif;color:var(--tit);border-left:5px solid var(--ouro);padding-left:15px;margin:28px 0 12px}
+h2.sec:first-child{margin-top:4px}
+.sub{color:var(--mut);font-size:.87rem;margin:-4px 0 12px}
+.sub b{color:var(--ink)}
+
+/* cartões de indicadores */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;text-align:left;box-shadow:var(--sombra);transition:transform .12s,box-shadow .12s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 6px 12px rgba(0,0,0,.18)}
+.kpi h3{margin:0;font:700 .72rem "Open Sans",sans-serif;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font:700 2rem/1.15 Montserrat,"Open Sans",sans-serif;color:var(--tit);display:flex;align-items:baseline;gap:8px}
+.kpi .d,.d{font-size:.78rem;font-weight:700}.d.up{color:var(--ok)}.d.dn{color:var(--bad)}
+.kpi svg{width:100%;height:34px;margin:4px 0}
+.kpi ul{list-style:none;margin:2px 0 0;padding:0;font-size:.82rem;color:var(--mut)}
+.kpi li{display:flex;justify-content:space-between;gap:8px}.kpi li b{color:var(--ink);font-weight:700}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.insights{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--ouro);border-radius:6px;padding:10px 18px;margin:16px 0}
+.insights ul{margin:0;padding-left:18px}.insights li{margin:6px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px 16px;box-shadow:var(--sombra);min-width:0}
+.card h3{margin:0 0 2px;font:700 1rem Montserrat,"Open Sans",sans-serif;color:var(--tit)}
+.card .sub{margin:0 0 8px}
+.aviso{font-size:.78rem;color:var(--mut);background:var(--soft);border-radius:4px;padding:3px 8px;display:inline-block;margin-bottom:6px}
+.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:16px;margin-bottom:16px}
+.graf{position:relative;height:290px}.graf.alto{height:420px}
+.controles{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;margin-bottom:12px}
+.controles label{display:flex;flex-direction:column;font-size:.74rem;color:var(--mut);gap:3px;font-weight:600}
+
+/* botões no estilo "Acesso rápido": azul-marinho, texto branco em negrito */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:0;background:var(--azul);color:#fff;border-radius:14px;padding:7px 16px;font:700 .82rem Montserrat,"Open Sans",sans-serif;box-shadow:var(--sombra)}
+.chip:hover{background:var(--azul-esc)}
+.chip.on{background:var(--ouro);color:var(--azul);box-shadow:0 0 0 2px var(--azul)}
+:root[data-theme=dark] .chip{background:var(--soft);border:1px solid var(--line)}
+:root[data-theme=dark] .chip.on{background:var(--ouro);color:#0b1730;box-shadow:none}
+.btn{background:var(--azul);color:#fff;border:0;border-radius:14px;padding:6px 16px;font:700 .82rem Montserrat,"Open Sans",sans-serif;box-shadow:var(--sombra)}
+.btn:hover{background:var(--azul-esc)}
+:root[data-theme=dark] .btn{background:var(--ouro);color:#0b1730}
+.leg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.86rem;margin:6px 0}
+.leg button{background:none;border:0;padding:2px 4px;border-radius:4px}
+.leg button.off{opacity:.35;text-decoration:line-through}
+.acoes{display:flex;gap:8px;margin-top:10px}
+
+.tabela-wrap{overflow:auto;max-height:620px;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td.t,th.t{text-align:left}
+th{color:#fff;background:var(--azul);font-weight:700;cursor:pointer;user-select:none;position:sticky;top:0;z-index:1}
+:root[data-theme=dark] th{background:#0f2147;color:var(--ouro)}
+tbody tr{cursor:pointer}tbody tr:hover td{background:var(--soft)}
+tr.u td{background:rgba(255,215,0,.22);font-weight:700}
+tr.sel td:first-child{box-shadow:inset 5px 0 var(--ciano)}
+.heat td{padding:3px 4px;text-align:center;min-width:34px;font-size:.78rem}
+.heat td:first-child{text-align:left;min-width:240px;max-width:300px;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;background:var(--card)}
+.hc{border-radius:4px;color:#fff;font-weight:700;font-style:normal;padding:1px 5px;display:inline-block;min-width:22px}
+
+/* programas em cartões */
+.ppg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px;margin-bottom:8px}
+.ppg{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--azul);border-radius:6px;padding:12px 14px;text-align:left;display:flex;flex-direction:column;gap:7px;box-shadow:var(--sombra);transition:transform .12s,box-shadow .12s}
+:root[data-theme=dark] .ppg{border-top-color:var(--ouro)}
+.ppg:hover{transform:translateY(-2px);box-shadow:0 6px 12px rgba(0,0,0,.2)}
+.ppg-top{display:flex;gap:10px;align-items:flex-start}
+.ppg h3{margin:0;font:700 .95rem/1.25 Montserrat,"Open Sans",sans-serif;color:var(--tit)}
+.ppg small{color:var(--mut);font-size:.78rem}
+.nota{flex:none;width:46px;height:46px;border-radius:8px;color:#fff;font:800 1.4rem Montserrat,sans-serif;display:flex;align-items:center;justify-content:center}
+.ppg-tags{display:flex;flex-wrap:wrap;gap:5px}
+.ppg-ref{display:flex;flex-direction:column;gap:2px;font-size:.82rem}.mut{color:var(--mut)}
+.ppg .nums b{font-size:1.1rem}.ppg svg{width:100%;height:28px}
+.rede-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.rede{text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:6px;border-top:4px solid var(--azul)}
+:root[data-theme=dark] .rede{border-top-color:var(--ouro)}
+.rede:hover{box-shadow:0 6px 12px rgba(0,0,0,.2)}
+.tag{display:inline-block;font-size:.7rem;padding:1px 8px;border-radius:999px;background:var(--soft);border:1px solid var(--line);color:var(--mut);font-weight:600}
+.tag.sede{background:var(--azul);color:#fff;border-color:transparent}
+.tag.assoc{background:var(--ouro);color:var(--azul);border-color:transparent}
+:root[data-theme=dark] .tag.sede{background:var(--c-se);color:#06102a}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+.nums b{display:block;font:700 1.3rem Montserrat,sans-serif;color:var(--tit)}.nums span{font-size:.72rem;color:var(--mut)}
+.tl{display:flex;gap:2px;flex-wrap:wrap}.tl i{font-style:normal;font-size:.65rem;width:30px;text-align:center;border-radius:3px;color:#fff;padding:1px 0}
+
+dialog{border:0;border-radius:6px;border-top:5px solid var(--ouro);padding:0;background:var(--card);color:var(--ink);width:min(960px,96vw);max-height:92vh;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+dialog::backdrop{background:rgba(10,20,45,.65)}
+.modal-in{padding:20px;position:relative}
+.fechar{position:absolute;right:12px;top:8px;background:none;border:0;font-size:1.9rem;color:var(--mut)}
+.modal-in h2{margin:0 30px 4px 0;font:700 1.25rem Montserrat,sans-serif;color:var(--tit)}
+
+.status{margin-top:14px;border:1px solid var(--line);border-left:5px solid var(--ouro);background:var(--card);border-radius:6px;padding:10px 14px;font-size:.92rem}
+.status.ok{border-left-color:var(--ok)}.status b{color:var(--tit)}
+.status ul{margin:4px 0 0;padding-left:18px;color:var(--mut)}
+.pill{display:inline-block;font-size:.7rem;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--soft);border:1px solid var(--line)}
+.pill.em_dia{color:var(--ok)}.pill.novo,.pill.novo_ano,.pill.revisado{color:#8a6d00;border-color:var(--ouro);background:rgba(255,215,0,.2)}
+:root[data-theme=dark] .pill.novo,:root[data-theme=dark] .pill.novo_ano,:root[data-theme=dark] .pill.revisado{color:var(--ouro)}
+.sobre ul{color:var(--mut);padding-left:18px}.sobre li{margin:6px 0}.sobre b{color:var(--ink)}
+
+/* rodapé azul-marinho */
+.rodape{background:var(--azul);color:#fff;margin-top:20px;font-size:.84rem}
+:root[data-theme=dark] .rodape{background:#06102a}
+.rodape-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;padding-top:26px;padding-bottom:26px}
+.rodape h4{margin:0 0 6px;font:700 .95rem Montserrat,sans-serif;color:var(--ouro)}
+.rodape p{margin:3px 0}.rodape a{color:#fff}
+@media (max-width:700px){
+  html{scroll-padding-top:56px}
+  .cab-marca{font-size:1.3rem}.cab-ies{display:none}.graf{height:250px}.link{margin-left:0}
+  .abas button{padding:12px 10px 8px;font-size:.8rem}
+}
+@media print{.gov,.fixo,.acoes,.controles{display:none}}
+
+/* cartão de programa com link ao site (stretched link) */
+.ppg{position:relative}
+.ppg-link{color:inherit;text-decoration:none}
+.ppg-link::after{content:"";position:absolute;inset:0;z-index:1;border-radius:6px}
+.ppg:hover .ppg-link{text-decoration:underline}
+.ppg-rodape{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;font-size:.78rem}
+.ppg-site{color:var(--link);font-weight:700}
+.ppg-traj{position:relative;z-index:2;background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:3px 12px;font-size:.76rem;font-weight:700;color:var(--tit)}
+.ppg-traj:hover{border-color:var(--azul)}
+.campi{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 14px}
+.campi-t{font-weight:700;font-size:.78rem;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-right:4px}
+
+/* cabeçalho: logo ProPlan à esquerda, título ao centro, logo ProPG à direita */
+.cab-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,460px) minmax(0,1fr);align-items:center;gap:20px;padding-top:18px;padding-bottom:18px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+.logo img{display:block;height:48px;width:auto}
+.logo img.desc{height:40px}
+.logo-esq{justify-self:start}
+.logo-dir{justify-self:end;text-align:right}
+.logo-desc{font:400 .8rem/1.25 "Open Sans",sans-serif;max-width:170px}.logo-desc b{display:block;font-weight:700;color:var(--azul)}
+.cab-marca{text-align:center;padding:0 0 12px;border:0;font-size:1.65rem;position:relative}
+.cab-marca::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:90px;height:5px;background:var(--ouro);border-radius:3px}
+.cab-marca small{margin-top:6px}
+/* no alto contraste o fundo é escuro: logotipos sobre placa branca */
+:root[data-theme=dark] .logo{background:#fff;border-radius:6px;padding:4px 10px}
+:root[data-theme=dark] .logo-desc b{color:var(--azul)}
+@media (max-width:980px){
+  .cab-in{grid-template-columns:1fr 1fr;grid-template-areas:"esq dir" "marca marca";gap:14px}
+  .logo-esq{grid-area:esq}.logo-dir{grid-area:dir}.cab-marca{grid-area:marca;font-size:1.35rem}
+}
+@media (max-width:620px){.logo img.desc,.logo-desc{display:none}.logo img{height:40px}}
+@media (max-width:1150px){.logo-desc{display:none}.logo img.desc{height:34px}}

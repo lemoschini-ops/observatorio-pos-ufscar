@@ -1,0 +1,39 @@
+{
+ "verificado_em": "2026-10-02T10:09:11",
+ "erro": null,
+ "fontes": [
+  {
+   "id": "prog",
+   "nome": "Programas da pós-graduação (dados abertos)",
+   "situacao": "em_dia",
+   "detalhe": "Último ano publicado: 2024.",
+   "ultimo_ano": 2024,
+   "url": "https://dadosabertos.capes.gov.br/"
+  },
+  {
+   "id": "disc",
+   "nome": "Discentes da pós-graduação (dados abertos)",
+   "situacao": "em_dia",
+   "detalhe": "Último ano publicado: 2024.",
+   "ultimo_ano": 2024,
+   "url": "https://dadosabertos.capes.gov.br/"
+  },
+  {
+   "id": "doc",
+   "nome": "Docentes da pós-graduação (dados abertos)",
+   "situacao": "em_dia",
+   "detalhe": "Último ano publicado: 2024.",
+   "ultimo_ano": 2024,
+   "url": "https://dadosabertos.capes.gov.br/"
+  },
+  {
+   "id": "quadrienal",
+   "nome": "Resultado da Avaliação Quadrienal",
+   "situacao": "em_dia",
+   "detalhe": "Página modificada em 03/07/2026 16:18.",
+   "url": "https://www.gov.br/capes/pt-br/acesso-a-informacao/acoes-e-programas/avaliacao/avaliacao-quadrienal/resultado-da-avaliacao-quadrienal-2021-2024"
+  }
+ ],
+ "ha_novidade": false,
+ "sem_base": false
+}
