@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transparência UFSCar</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--fg:#1d2330;--mut:#667085;--bd:#e1e4ea;--pri:#c8102e;--pri2:#9d0c24}
+@media(prefers-color-scheme:dark){:root{--bg:#14171d;--card:#1d222b;--fg:#e8eaee;--mut:#97a0af;--bd:#2f3642}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+header{background:var(--pri);color:#fff;padding:14px 20px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:20px}header span{opacity:.85;font-size:13px}
+main{display:grid;grid-template-columns:220px 1fr;gap:16px;padding:16px;max-width:1500px;margin:auto}
+@media(max-width:800px){main{grid-template-columns:1fr}}
+nav{display:flex;flex-direction:column;gap:6px}
+nav button{text-align:left;padding:10px 12px;border:1px solid var(--bd);background:var(--card);color:var(--fg);border-radius:8px;cursor:pointer;font:inherit}
+nav button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:3px}
+input,select{padding:7px 9px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit}
+.btn{padding:8px 14px;border:0;border-radius:6px;background:var(--pri);color:#fff;cursor:pointer;font:inherit}
+.btn:hover{background:var(--pri2)}.btn.sec{background:var(--bd);color:var(--fg)}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.bar .sp{flex:1}
+.tw{overflow:auto;max-height:520px;border:1px solid var(--bd);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 10px;border-bottom:1px solid var(--bd);white-space:nowrap;text-align:left}
+th{position:sticky;top:0;background:var(--card);cursor:pointer;user-select:none}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+#msg{color:var(--mut);padding:8px 0}#msg.err{color:var(--pri)}
+.chartbox{height:300px;position:relative}
+</style>
+</head>
+<body>
+<header><h1>Transparência UFSCar</h1><span>Universidade Federal de São Carlos · dados do Portal da Transparência do Governo Federal</span></header>
+<main>
+<nav id="nav"></nav>
+<section>
+  <div class="card"><form id="form" class="filters"></form></div>
+  <div class="card">
+    <div class="bar">
+      <input id="q" placeholder="Filtrar resultados…" style="min-width:220px">
+      <span id="count" style="color:var(--mut)"></span><span class="sp"></span>
+      <button class="btn sec" id="prev">‹</button><span id="pg"></span><button class="btn sec" id="next">›</button>
+      <button class="btn sec" id="csv">Exportar CSV</button>
+    </div>
+    <div id="msg">Escolha uma consulta e clique em Consultar.</div>
+    <div class="tw"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+  </div>
+  <div class="card" id="chartcard" hidden>
+    <div class="bar"><label>Agrupar por <select id="gcol"></select></label><label>Somar <select id="vcol"></select></label>
+      <label>Tipo <select id="ctype"><option value="bar">Barras</option><option value="doughnut">Rosca</option></select></label></div>
+    <div class="chartbox"><canvas id="chart"></canvas></div>
+  </div>
+</section>
+</main>
+<script>
+const D=s=>{const [y,m,d]=s.split('-');return `${d}/${m}/${y}`};
+const M=s=>s.split('-').reverse().join('/');
+const year=new Date().getFullYear();
+const dr=[{k:'data_inicial',l:'Data inicial',t:'date',v:`${year}-01-01`,f:D},{k:'data_final',l:'Data final',t:'date',v:`${year}-01-31`,f:D}];
+const DS={
+ despesas:{n:'Despesas por órgão',f:[{k:'ano',l:'Ano',t:'number',v:year-1}]},
+ servidores:{n:'Servidores',f:[{k:'tipo_servidor',l:'Tipo',t:'select',o:[['','Todos'],[1,'Civil'],[2,'Militar']]},{k:'situacao',l:'Situação',t:'select',o:[['','Todas'],[1,'Ativo'],[2,'Inativo'],[3,'Pensionista']]}]},
+ contratos:{n:'Contratos',f:dr},
+ licitacoes:{n:'Licitações',f:dr},
+ convenios:{n:'Convênios',f:dr},
+ viagens:{n:'Viagens',f:[{k:'data_ida_de',l:'Ida de',t:'date',v:`${year}-01-01`,f:D},{k:'data_ida_ate',l:'Ida até',t:'date',v:`${year}-01-31`,f:D},{k:'data_retorno_de',l:'Retorno de',t:'date',v:`${year}-01-01`,f:D},{k:'data_retorno_ate',l:'Retorno até',t:'date',v:`${year}-02-28`,f:D}]},
+ cartoes:{n:'Cartões de pagamento',f:[{k:'mes_inicio',l:'Mês inicial',t:'month',v:`${year-1}-01`,f:M},{k:'mes_fim',l:'Mês final',t:'month',v:`${year-1}-03`,f:M}]},
+ orgao:{n:'Dados do órgão',f:[]}
+};
+const $=id=>document.getElementById(id);
+let cur,page=1,rows=[],cols=[],sortK=null,sortD=1,chart;
+
+function flat(o,p='',out={}){for(const[k,v]of Object.entries(o)){const key=p?`${p}.${k}`:k;
+ if(v&&typeof v==='object'&&!Array.isArray(v))flat(v,key,out);else out[key]=Array.isArray(v)?JSON.stringify(v):v}return out}
+const isNum=v=>typeof v==='number';
+const fmt=v=>v==null?'':isNum(v)?v.toLocaleString('pt-BR'):String(v);
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+$('nav').innerHTML=Object.entries(DS).map(([k,d])=>`<button data-k="${k}">${d.n}</button>`).join('');
+$('nav').onclick=e=>{const k=e.target.dataset.k;if(k)select(k)};
+
+function select(k){cur=k;page=1;
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+ $('form').innerHTML=DS[k].f.map(f=>f.t==='select'
+  ?`<label>${f.l}<select name="${f.k}">${f.o.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('')}</select></label>`
+  :`<label>${f.l}<input name="${f.k}" type="${f.t}" value="${f.v??''}" required></label>`).join('')+'<button class="btn">Consultar</button>';
+ rows=[];cols=[];render();$('msg').className='';$('msg').textContent='Ajuste os filtros e clique em Consultar.'}
+$('form').onsubmit=e=>{e.preventDefault();page=1;load()};
+
+async function load(){
+ const p=new URLSearchParams({pagina:page});
+ for(const f of DS[cur].f){const el=$('form').elements[f.k];if(el.value!=='')p.set(f.k,f.f?f.f(el.value):el.value)}
+ $('msg').className='';$('msg').textContent='Consultando…';
+ try{const r=await fetch(`/${cur}?${p}`);const t=await r.text();
+  if(!r.ok)throw new Error(`${r.status}: ${t.slice(0,300)}`);
+  let j=JSON.parse(t);j=Array.isArray(j)?j:[j];rows=j.map(o=>flat(o));
+  cols=[...new Set(rows.flatMap(Object.keys))];sortK=null;
+  $('msg').textContent=rows.length?'':'Nenhum registro encontrado.';
+ }catch(err){rows=[];cols=[];$('msg').className='err';$('msg').textContent=err.message}
+ render()}
+
+function view(){const q=$('q').value.toLowerCase();
+ let r=q?rows.filter(o=>Object.values(o).some(v=>String(v??'').toLowerCase().includes(q))):[...rows];
+ if(sortK)r.sort((a,b)=>{const x=a[sortK],y=b[sortK];return (x==y?0:x==null?1:y==null?-1:x>y?1:-1)*sortD});return r}
+
+function render(){const r=view();
+ $('count').textContent=`${r.length} de ${rows.length} registros`;$('pg').textContent=`pág. ${page}`;
+ $('prev').disabled=page<=1;$('next').disabled=rows.length===0;
+ $('thead').innerHTML=cols.length?'<tr>'+cols.map(c=>`<th data-c="${c}">${c}${sortK===c?(sortD>0?' ▲':' ▼'):''}</th>`).join('')+'</tr>':'';
+ $('tbody').innerHTML=r.map(o=>'<tr>'+cols.map(c=>`<td class="${isNum(o[c])?'n':''}">${esc(fmt(o[c]))}</td>`).join('')+'</tr>').join('');
+ chartUI(r)}
+$('thead').onclick=e=>{const c=e.target.dataset.c;if(!c)return;sortD=sortK===c?-sortD:1;sortK=c;render()};
+$('q').oninput=render;
+$('prev').onclick=()=>{if(page>1){page--;load()}};$('next').onclick=()=>{page++;load()};
+
+function chartUI(r){const show=rows.length>0;$('chartcard').hidden=!show;if(!show)return;
+ const num=cols.filter(c=>rows.some(o=>isNum(o[c]))),cat=cols.filter(c=>!num.includes(c));
+ const keep=(id,opts)=>{const s=$(id),v=s.value;s.innerHTML=opts;if([...s.options].some(o=>o.value===v))s.value=v};
+ keep('gcol',cat.map(c=>`<option>${c}</option>`).join(''));
+ keep('vcol','<option value="">(contagem)</option>'+num.map(c=>`<option>${c}</option>`).join(''));
+ drawChart(r)}
+function drawChart(r){const g=$('gcol').value,v=$('vcol').value;if(!g||typeof Chart==='undefined')return;
+ const m={};for(const o of r){const k=o[g]??'—';m[k]=(m[k]||0)+(v?(+o[v]||0):1)}
+ const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,15);
+ chart?.destroy();const t=$('ctype').value;
+ chart=new Chart($('chart'),{type:t,data:{labels:top.map(x=>String(x[0]).slice(0,40)),datasets:[{label:v||'contagem',data:top.map(x=>x[1]),backgroundColor:t==='bar'?'#c8102e':top.map((_,i)=>`hsl(${i*24},65%,50%)`)}]},
+  options:{maintainAspectRatio:false,plugins:{legend:{display:t!=='bar'}}}})}
+['gcol','vcol','ctype'].forEach(i=>$(i).onchange=()=>drawChart(view()));
+
+$('csv').onclick=()=>{const r=view();if(!r.length)return;
+ const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+ const txt='﻿'+[cols.map(q).join(';'),...r.map(o=>cols.map(c=>q(o[c])).join(';'))].join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv'}));a.download=`ufscar_${cur}.csv`;a.click()};
+select('despesas');
+</script>
+</body>
+</html>
