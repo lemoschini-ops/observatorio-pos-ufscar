@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de Indicadores · ProPlan UFSCar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="painel.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="util"><div><span>Universidade Federal de São Carlos · Pró-Reitoria de Planejamento, Governança e Gestão</span><span>Fontes: TCU · CGU · INEP · CAPES · ProPlan · <span id="gerado"></span></span></div></div>
+<header><div class="in">
+  <img src="logo_proplan.png" alt="ProPlan UFSCar" onerror="this.style.display='none'">
+  <div><h1>Painel de Indicadores TCU e CGU</h1><div class="sub">Universidade Federal de São Carlos · comparação com universidades federais de SP, do Sudeste e do Brasil</div></div>
+  <div class="tools"><button class="btn" id="bLink" title="Copia o endereço com os filtros atuais">Copiar link</button><button class="btn" onclick="print()">Imprimir</button></div>
+</div></header>
+<nav aria-label="Seções do painel"><div class="in" id="nav" role="tablist">
+  <button class="tab" role="tab" data-t="home">Visão geral</button>
+  <button class="tab" role="tab" data-t="tcu">Indicadores TCU</button>
+  <button class="tab" role="tab" data-t="comp">Comparativo</button>
+  <button class="tab" role="tab" data-t="iesgo">TCU · iESGo</button>
+  <button class="tab" role="tab" data-t="lai">CGU · Acesso à Informação</button>
+  <button class="tab" role="tab" data-t="ouv">CGU · Ouvidoria</button>
+</div></nav>
+<main>
+<div id="err"></div>
+<div id="loading"><div class="grid"><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div></div></div>
+
+<!-- ===== VISÃO GERAL ===== -->
+<section id="home">
+  <h2>Visão geral</h2>
+  <p class="lead">Resumo dos principais indicadores. Clique em um cartão para abrir os detalhes.</p>
+  <div class="grid" id="homeKpis"></div>
+  <div class="grid g2">
+    <div class="card"><div class="head"><h3>Perfil da UFSCar entre as universidades federais</h3><span class="sp"></span><button class="btn sm" data-png="cPerfil">PNG</button></div>
+      <div class="pos">Posição relativa entre as 69 universidades federais (100 = maior valor do Brasil). Clique em uma barra para abrir o indicador.</div><div class="canvas"><canvas id="cPerfil"></canvas></div></div>
+    <div class="card"><h3>Destaques e pontos de atenção</h3><div class="pos" style="margin-bottom:6px">Gerado automaticamente a partir das posições no iESGo e no comparativo (terços superior e inferior).</div><div id="insights"></div></div>
+  </div>
+</section>
+
+<!-- ===== INDICADORES TCU ===== -->
+<section id="tcu">
+  <h2>Indicadores de gestão apresentados ao TCU</h2>
+  <p class="lead">Decisão TCU nº 408/2002 (alterada pelos Acórdãos 1.043/2006 e 2.167/2006). Série oficial da UFSCar publicada pela ProPlan, 2009–2025.</p>
+  <div class="note">O TCU auditou esse conjunto de indicadores (Acórdão 461/2022) e determinou ao MEC a elaboração de um novo modelo, por considerá-los insuficientes e desatualizados (<a href="https://portal.tcu.gov.br/publicacoes-institucionais/temas-fiscalizados/indicadores-de-gestao-e-desempenho-das-universidades-federais" target="_blank" rel="noopener">ficha-síntese do TCU</a>). Não existe base pública consolidada desses indicadores para todas as universidades; por isso o comparativo usa indicadores calculados a partir de dados abertos.</div>
+  <div class="grid" id="tcuKpis"></div>
+  <div class="card" style="margin-bottom:14px"><div class="head"><h3>Série histórica</h3><select id="selInd" aria-label="Indicador"></select><span class="sp"></span><label class="pos"><input type="checkbox" id="chkIndComp"> incluir componentes</label><button class="btn sm" data-png="cSerie">PNG</button></div><div class="canvas"><canvas id="cSerie"></canvas></div></div>
+  <div class="card" style="margin-bottom:14px"><div class="head"><h3>Indicadores</h3><span class="pos">Clique em uma linha para ver a série.</span></div><div class="scroll"><table id="tInd"></table></div></div>
+  <div class="card"><div class="head"><h3>Componentes geradores</h3></div><div class="scroll"><table id="tComp"></table></div></div>
+  <div class="src" id="srcTcu"></div>
+</section>
+
+<!-- ===== COMPARATIVO ===== -->
+<section id="comp">
+  <h2>UFSCar × universidades federais</h2>
+  <p class="lead" id="compLead"></p>
+  <div class="note w" id="compNota"></div>
+  <div class="toolbar">
+    <label>Grupo <span class="seg" id="segGrp"><button data-v="SP">São Paulo</button><button data-v="Sudeste">Sudeste</button><button data-v="Brasil">Brasil</button></span></label>
+    <label>Indicador <select id="selMet"></select></label>
+    <label>Destacar <input type="text" id="inDest" list="dlUniv" placeholder="sigla da universidade" size="18"></label><datalist id="dlUniv"></datalist>
+    <span class="chips" id="chipsDest"></span>
+  </div>
+  <div class="card" style="margin-bottom:14px"><div class="head"><h3>Resumo por grupo</h3><span class="pos">Clique em uma linha para escolher o indicador dos gráficos.</span><span class="sp"></span><button class="btn sm" data-csv="resumo">CSV</button></div><div class="scroll free"><table id="tResumo"></table></div></div>
+  <div class="grid g2">
+    <div class="card"><div class="head"><h3>Ranking</h3><span class="sp"></span><button class="btn sm" data-png="cRank">PNG</button><button class="btn sm" data-csv="rank">CSV</button></div><div class="pos" id="metDesc"></div><div style="max-height:520px;overflow-y:auto"><div style="position:relative" id="rankBox"><canvas id="cRank"></canvas></div></div></div>
+    <div class="card"><div class="head"><h3>Evolução</h3><span class="sp"></span><button class="btn sm" data-png="cEvol">PNG</button></div><div class="canvas"><canvas id="cEvol"></canvas></div>
+      <div class="head" style="margin-top:14px"><h3>Relação entre dois indicadores</h3><select id="selX" aria-label="Eixo X"></select><span class="pos">×</span><select id="selY" aria-label="Eixo Y"></select></div><div class="canvas sm"><canvas id="cDisp"></canvas></div></div>
+  </div>
+  <div class="card"><div class="head"><h3>iESGo (TCU) por grupo</h3></div><div class="scroll free"><table id="tIesgoGrp"></table></div><div class="pos" style="margin-top:6px" id="iesgoGrpNota"></div></div>
+  <div class="src" id="srcComp"></div>
+</section>
+
+<!-- ===== iESGo ===== -->
+<section id="iesgo">
+  <h2>iESGo 2024 — Índice ESG do TCU</h2>
+  <p class="lead">Autoavaliação de governança, gestão e sustentabilidade. Comparação com as instituições de ensino (autarquias e fundações).</p>
+  <div class="grid" id="iKpis"></div>
+  <div class="toolbar"><label>Índice <select id="selIdx"></select></label><label>Mostrar <select id="selTop"><option value="15">15 melhores + UFSCar</option><option value="30">30 melhores + UFSCar</option><option value="all">todas</option></select></label><span class="pos">Clique em uma linha do quadro ou em uma barra para escolher o índice.</span></div>
+  <div class="grid g2">
+    <div class="card"><div class="head"><h3>UFSCar × média do grupo</h3><span class="sp"></span><button class="btn sm" data-png="cIdx">PNG</button></div><div class="pos" id="grupo"></div><div class="canvas"><canvas id="cIdx"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Posição no grupo (iGG × iES)</h3><span class="sp"></span><button class="btn sm" data-png="cPares">PNG</button></div><div class="canvas"><canvas id="cPares"></canvas></div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="head"><h3>Todos os índices</h3><span class="sp"></span><button class="btn sm" data-csv="idx">CSV</button></div><div class="scroll"><table id="tIdx"></table></div></div>
+    <div class="card"><div class="head"><h3 id="hRank">Ranking</h3><span class="sp"></span><button class="btn sm" data-png="cTop">PNG</button><button class="btn sm" data-csv="irank">CSV</button></div><div style="max-height:300px;overflow-y:auto;margin-bottom:10px"><div id="topBox" style="position:relative"><canvas id="cTop"></canvas></div></div><div class="scroll"><table id="tRank"></table></div></div>
+  </div>
+  <div class="src" id="srcIesgo"></div>
+</section>
+
+<!-- ===== LAI ===== -->
+<section id="lai">
+  <h2>Lei de Acesso à Informação (Fala.BR / CGU)</h2>
+  <p class="lead">Pedidos de acesso à informação dirigidos à UFSCar. Clique em uma barra de ano para detalhar.</p>
+  <div class="toolbar"><label>Ano <select id="selAno"></select></label><span class="pos">Os cartões e os gráficos de decisões, assuntos e meses seguem o ano escolhido.</span></div>
+  <div class="grid" id="laiKpis"></div>
+  <div class="grid g2">
+    <div class="card"><div class="head"><h3>Pedidos por ano</h3><span class="sp"></span><button class="btn sm" data-png="cPed">PNG</button></div><div class="canvas sm"><canvas id="cPed"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Tempo médio de resposta (dias)</h3><span class="sp"></span><button class="btn sm" data-png="cTempo">PNG</button></div><div class="pos">Prazo legal: 20 dias, prorrogável por mais 10</div><div class="canvas sm"><canvas id="cTempo"></canvas></div></div>
+    <div class="card"><div class="head"><h3>% respondido no prazo</h3><span class="sp"></span><button class="btn sm" data-png="cPrazo">PNG</button></div><div class="canvas sm"><canvas id="cPrazo"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Decisões</h3><span class="sp"></span><button class="btn sm" data-png="cDec">PNG</button></div><div class="canvas sm"><canvas id="cDec"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Assuntos mais frequentes</h3><span class="sp"></span><button class="btn sm" data-png="cAss">PNG</button></div><div class="canvas sm"><canvas id="cAss"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Pedidos por mês</h3><span class="sp"></span><button class="btn sm" data-png="cMes">PNG</button></div><div class="canvas sm"><canvas id="cMes"></canvas></div></div>
+  </div>
+  <div class="src" id="srcLai"></div>
+</section>
+
+<!-- ===== OUVIDORIA ===== -->
+<section id="ouv">
+  <h2>Ouvidoria (e-Ouv / Fala.BR · CGU)</h2>
+  <p class="lead">Manifestações de reclamação, denúncia, solicitação, sugestão, elogio e comunicação. Use os filtros ou clique nos gráficos para detalhar.</p>
+  <div class="toolbar" id="ouvBar">
+    <label>De <select id="oDe"></select></label><label>até <select id="oAte"></select></label>
+    <label>Unidade <select id="oEnt"><option value="0">UFSCar</option><option value="1">HU-UFSCar (Ebserh)</option><option value="all">UFSCar + HU</option></select></label>
+    <label>Canal <select id="oForm"><option value="">Todos</option><option value="0">Padrão</option><option value="1">Denúncia</option></select></label>
+    <span class="chips" id="oTipos"></span>
+    <span class="chips" id="oAss"></span>
+    <button class="btn sm" id="oReset">Limpar filtros</button>
+  </div>
+  <div class="grid" id="ouvKpis"></div>
+  <div class="grid g2">
+    <div class="card"><div class="head"><h3>Manifestações por ano e tipo</h3><span class="sp"></span><button class="btn sm" data-png="cOAno">PNG</button></div><div class="pos">Clique em uma barra para filtrar o ano.</div><div class="canvas sm"><canvas id="cOAno"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Tipos de manifestação</h3><span class="sp"></span><button class="btn sm" data-png="cOTipo">PNG</button></div><div class="pos">Clique em uma fatia para filtrar o tipo.</div><div class="canvas sm"><canvas id="cOTipo"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Tempo médio de resolução (dias)</h3><span class="sp"></span><button class="btn sm" data-png="cOTempo">PNG</button></div><div class="pos">Comparação com o total das universidades federais (prazo legal: 30 dias)</div><div class="canvas sm"><canvas id="cOTempo"></canvas></div></div>
+    <div class="card"><div class="head"><h3>% respondido no prazo</h3><span class="sp"></span><button class="btn sm" data-png="cOPrazo">PNG</button></div><div class="canvas sm"><canvas id="cOPrazo"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Assuntos mais frequentes</h3><span class="sp"></span><button class="btn sm" data-png="cOAss">PNG</button></div><div class="pos">Clique em uma barra para filtrar o assunto.</div><div class="canvas sm"><canvas id="cOAss"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Manifestações por mês</h3><span class="sp"></span><button class="btn sm" data-png="cOMes">PNG</button></div><div class="canvas sm"><canvas id="cOMes"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Tempo de resolução (distribuição)</h3><span class="sp"></span><button class="btn sm" data-png="cODist">PNG</button></div><div class="canvas sm"><canvas id="cODist"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Satisfação e demanda atendida</h3><span class="sp"></span><button class="btn sm" data-png="cOSat">PNG</button></div><div class="pos" id="satNota"></div><div class="canvas sm"><canvas id="cOSat"></canvas></div></div>
+  </div>
+  <div class="card"><div class="head"><h3>Assuntos (tabela)</h3><span class="sp"></span><button class="btn sm" data-csv="oass">CSV</button></div><div id="tOAssBox"></div></div>
+  <div class="src" id="srcOuv"></div>
+</section>
+
+</main>
+<button class="btn" id="top" onclick="scrollTo({top:0})">↑ Topo</button>
+<div id="toast" role="status"></div>
+<footer>Painel construído com dados abertos oficiais · Pró-Reitoria de Planejamento, Governança e Gestão · UFSCar</footer>
+<script src="painel.js"></script>
+</body>
+</html>

@@ -40,3 +40,6 @@ Os indicadores comparativos são **calculados** com fórmulas simplificadas (ex.
 ### Ouvidoria e navegação do painel
 - **Ouvidoria** (`--only ouv`): manifestações do e-Ouv/Fala.BR (CGU) da UFSCar e do HU-UFSCar (Ebserh, órgão separado). O painel guarda uma linha anônima por manifestação (ano, mês, tipo, assunto, prazo, satisfação), sem texto nem dados do manifestante. A coleta lê um zip de ~190 MB e leva alguns minutos.
 - **Navegação**: o estado fica na URL (`#tab=ouv&de=2023&ate=2025&tipo=Reclamação`), então links, voltar/avançar e "Copiar link" preservam filtros. Gráficos são clicáveis (filtram ano, tipo, assunto, índice), tabelas ordenam e buscam, e há exportação em PNG/CSV e impressão.
+
+### Publicação estática (Cloudflare Pages)
+`py -m etl.export_site` gera a pasta `site/` (HTML, CSS, JS e `data/painel.json`), sem servidor. No Cloudflare Pages: conectar este repositório, *Build command* vazio e *Build output directory* `site`. Para atualizar: `py -m etl.build`, `py -m etl.export_site`, commit e push.
