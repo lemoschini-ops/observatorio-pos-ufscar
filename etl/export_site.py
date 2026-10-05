@@ -12,9 +12,7 @@ SITE = ROOT / "site"
 
 
 def main() -> None:
-    if SITE.exists():
-        shutil.rmtree(SITE)
-    (SITE / "data").mkdir(parents=True)
+    (SITE / "data").mkdir(parents=True, exist_ok=True)
     html = (ROOT / "static" / "painel.html").read_text(encoding="utf-8")
     html = html.replace("/static/", "")
     (SITE / "index.html").write_text(html, encoding="utf-8")

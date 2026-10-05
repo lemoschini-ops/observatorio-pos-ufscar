@@ -46,7 +46,6 @@ document.addEventListener('click', e => {
   if (c && csvStore[c.dataset.csv]) { const s = csvStore[c.dataset.csv]; const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
     download(s.name + '.csv', new Blob(['﻿' + [s.header, ...s.rows].map(r => r.map(q).join(';')).join('\r\n')], {type: 'text/csv;charset=utf-8'})); }
 });
-$('#bLink').onclick = () => navigator.clipboard.writeText(location.href).then(() => toast('Link copiado, com os filtros atuais'), () => toast('Não foi possível copiar'));
 addEventListener('scroll', () => $('#top').style.display = scrollY > 500 ? 'block' : 'none');
 $('#nav').addEventListener('keydown', e => { const i = TABS.indexOf(tab); if (e.key === 'ArrowRight') go(TABS[(i + 1) % TABS.length]); if (e.key === 'ArrowLeft') go(TABS[(i + TABS.length - 1) % TABS.length]); });
 $$('#nav .tab').forEach(b => b.onclick = () => go(b.dataset.t));
