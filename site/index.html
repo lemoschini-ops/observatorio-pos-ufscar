@@ -6,21 +6,12 @@
 <title>Observatório da Pós-Graduação da UFSCar</title>
 <meta name="description" content="Série histórica da pós-graduação stricto sensu da UFSCar comparada com o Sudeste e o Brasil (dados abertos da CAPES).">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Open+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
-<div class="gov">
-  <div class="wrap gov-in">
-    <span>Universidade Federal de São Carlos · dados abertos da CAPES</span>
-    <div class="gov-acoes">
-      <button id="fonte-menos" title="Diminuir texto" aria-label="Diminuir texto">A−</button>
-      <button id="fonte-mais" title="Aumentar texto" aria-label="Aumentar texto">A+</button>
-      <button id="tema" title="Alternar alto contraste" aria-label="Alternar alto contraste">◐ Alto contraste</button>
-    </div>
-  </div>
-</div>
+<a class="skip" href="#main" style="position:absolute;left:-999px">Ir para o conteúdo</a>
 
 <header class="cab">
   <div class="wrap cab-in">
@@ -31,42 +22,48 @@
   </div>
 </header>
 
-<div class="fixo">
-  <div class="menu"><nav class="wrap abas" id="abas" aria-label="Seções">
-    <button data-tab="geral">Visão geral</button>
-    <button data-tab="serie">Série histórica</button>
-    <button data-tab="discentes">Discentes</button>
-    <button data-tab="docentes">Docentes</button>
-    <button data-tab="programas">Programas</button>
-    <button data-tab="niveis">Por nível</button>
-    <button data-tab="quadrienal">Quadrienal</button>
-    <button data-tab="redes">Programas em rede</button>
-    <button data-tab="ranking">Comparar IES</button>
-    <button data-tab="sobre">Metodologia</button>
-  </nav></div>
-  <div class="barra" id="barra">
-    <div class="wrap barra-in">
+<div class="navbar">
+  <nav class="nav-tabs" id="abas" aria-label="Seções">
+    <button class="nav-btn" data-tab="geral">Visão geral</button>
+    <button class="nav-btn" data-tab="serie">Série histórica</button>
+    <button class="nav-btn" data-tab="discentes">Discentes</button>
+    <button class="nav-btn" data-tab="docentes">Docentes</button>
+    <button class="nav-btn" data-tab="programas">Programas</button>
+    <button class="nav-btn" data-tab="niveis">Por nível</button>
+    <button class="nav-btn" data-tab="quadrienal">Quadrienal</button>
+    <button class="nav-btn" data-tab="redes">Programas em rede</button>
+    <button class="nav-btn" data-tab="ranking">Comparar IES</button>
+    <button class="nav-btn" data-tab="sobre">Metodologia</button>
+  </nav>
+  <div class="nav-tools">
+    <button id="fonte-menos" title="Diminuir texto" aria-label="Diminuir texto">A−</button>
+    <button id="fonte-mais" title="Aumentar texto" aria-label="Aumentar texto">A+</button>
+    <button id="tema" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro">◐</button>
+  </div>
+</div>
+
+<main id="main">
+  <section class="filters" aria-label="Filtros">
+    <div class="filters-grid" id="barra">
       <label>Universo de comparação
-        <span class="seg" id="f-univ">
-          <button data-v="fed" class="on">Federais</button><button data-v="all">Todas as IES</button>
-        </span>
+        <span class="seg" id="f-univ"><button data-v="fed" class="on">Federais</button><button data-v="all">Todas as IES</button></span>
       </label>
       <label>Grande área <select id="f-area"></select></label>
       <label>Nível <select id="f-grau">
         <option value="">Todos</option><option value="MESTRADO">Mestrado (acad. e prof.)</option><option value="DOUTORADO">Doutorado (acad. e prof.)</option><option value="ME">Mestrado acadêmico</option><option value="MP">Mestrado profissional</option><option value="DO">Doutorado acadêmico</option><option value="DP">Doutorado profissional</option>
       </select></label>
-      <label class="chk"><input type="checkbox" id="f-sem"> Sem a UFSCar nas comparações</label>
-      <label class="chk"><input type="checkbox" id="f-rede" checked> Incluir os 4 programas em rede nos totais da UFSCar</label>
       <label class="ano">Ano de referência <b id="ano-txt"></b>
         <input type="range" id="f-ano" aria-label="Ano de referência">
       </label>
+      <label class="check"><input type="checkbox" id="f-sem"> Sem a UFSCar nas comparações</label>
+      <label class="check"><input type="checkbox" id="f-rede" checked> Incluir os 4 programas em rede nos totais da UFSCar</label>
       <button id="limpar" class="link">Limpar filtros</button>
     </div>
-  </div>
-</div>
+    <div class="chips-out" id="chips-out" aria-live="polite"></div>
+  </section>
 
-<div class="wrap"><div id="status-banner" class="status" hidden></div><div id="nota-rede" class="status ok" hidden></div></div>
-<main class="wrap" id="main">
+  <div id="status-banner" class="status" hidden></div>
+  <div id="nota-rede" class="status ok" hidden></div>
   <div id="carregando" class="carregando">Carregando dados da CAPES…</div>
   <section class="tab" id="tab-geral" hidden></section>
   <section class="tab" id="tab-serie" hidden></section>
@@ -85,11 +82,10 @@
   <div id="m-corpo"></div>
 </div></dialog>
 
-<footer class="rodape"><div class="wrap rodape-in">
-  <div><h4>Sobre o painel</h4><p>Observatório da Pós-Graduação da UFSCar, com dados abertos da CAPES / Plataforma Sucupira (CC-BY). Os dados oficiais são os publicados pela CAPES e pela UFSCar.</p></div>
-  <div><h4>Fontes</h4><p><a href="https://dadosabertos.capes.gov.br/" target="_blank" rel="noopener">Dados Abertos CAPES</a></p><p><a href="https://www.gov.br/capes/pt-br/acesso-a-informacao/acoes-e-programas/avaliacao/avaliacao-quadrienal/resultado-da-avaliacao-quadrienal-2021-2024" target="_blank" rel="noopener">Resultado da Avaliação Quadrienal</a></p></div>
-  <div><h4>Atualização</h4><p>Dados atualizados em <span id="gerado"></span>.</p><p id="status-rodape"></p></div>
-</div></footer>
+<footer class="rodape">
+  <p>Observatório da Pós-Graduação da UFSCar · dados abertos da CAPES / Plataforma Sucupira (CC-BY). Os dados oficiais são os publicados pela CAPES e pela UFSCar.</p>
+  <p>Fontes: <a href="https://dadosabertos.capes.gov.br/" target="_blank" rel="noopener">Dados Abertos CAPES</a> · <a href="https://www.gov.br/capes/pt-br/acesso-a-informacao/acoes-e-programas/avaliacao/avaliacao-quadrienal/resultado-da-avaliacao-quadrienal-2021-2024" target="_blank" rel="noopener">Resultado da Avaliação Quadrienal</a> · Dados atualizados em <span id="gerado"></span>. <span id="status-rodape"></span></p>
+</footer>
 <script src="app.js"></script>
 </body>
 </html>

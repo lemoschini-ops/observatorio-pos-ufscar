@@ -54,3 +54,6 @@ Se surgir um programa novo, acrescente o código em `SITES` e rode o script.
 ## Programas em rede e níveis
 - Os 4 programas em rede em que a UFSCar é associada (PROFMAT, PROFIS, PROEF, PROF-FILO) entram nos totais da UFSCar por padrão (caixa no filtro). No ETL, cada programa gera linhas copiadas com `rede = "S"` (ies/ie = UFSCAR); Sudeste e Brasil ignoram essas cópias. Os números são os da rede inteira.
 - A aba "Por nível" separa mestrado/doutorado acadêmico e profissional; o filtro "Nível" aceita cada um isoladamente.
+
+## Design
+O visual segue o "Guia de design" de painéis de indicadores da ProPlan/UFSCar: azul-marinho `#244578`/`#0f4a85`, amarelo `#f2b705` para a entidade em foco (UFSCar), Open Sans, raio de 18 px, foco amarelo, menu fixo em grade 2×5, filtros em cartão com chips, faixa de abertura, figuras numeradas com exportação CSV, tabelas com cabeçalho azul-marinho e zebra, tema claro/escuro automático e impressão sem menu e filtros.

@@ -117,6 +117,7 @@ const aviso = k => {
 function destruir() { Object.values(charts).forEach(c => c.destroy()); for (const k in charts) delete charts[k]; }
 function grafico(id, tipo, labels, datasets, o = {}) {
   const el = document.getElementById(id); if (!el) return;
+  Chart.defaults.font.family = '"Open Sans", Roboto, Arial, sans-serif';
   const mut = cssVar("--mut"), grade = cssVar("--line"), dec = o.dec ?? 1, suf = o.suf || "";
   const horiz = o.horizontal;
   const c = new Chart(el, {
@@ -135,10 +136,14 @@ function grafico(id, tipo, labels, datasets, o = {}) {
       onClick: o.onClick,
     },
   });
-  charts[id] = c; return c;
+  charts[id] = c;
+  if (datasets.every(d => (d.data || []).every(v => v == null || v === 0)))
+    el.parentElement.insertAdjacentHTML("beforeend", '<div class="state" style="position:absolute;inset:0">Sem dados para os filtros atuais.</div>');
+  return c;
 }
 const linha = (nome, cor, data, forte) => ({ label: nome, data, borderColor: cor, backgroundColor: cor, borderWidth: forte ? 3.5 : 2, pointRadius: forte ? 3 : 2, pointHoverRadius: 5, tension: .25, spanGaps: true });
 const barra = (nome, cor, data) => ({ label: nome, data, backgroundColor: cor, borderRadius: 3 });
+const CAT = () => [cssVar("--c-se"), cssVar("--c-br"), cssVar("--c-u"), "#6db3f2", "#0f4a85", "#8aa4c8", "#c9a227", "#5d6877", "#a5c8ea"];
 const cores = () => GRUPOS.map(g => cssVar(g.cor));
 let GRUPOS = [];
 
@@ -202,7 +207,13 @@ ABAS.geral = el => {
     `Na Quadrienal (resultado de 05/2026), <b>${fmt(qs(0).c57, 1)}%</b> dos programas da UFSCar ficaram com nota 5 a 7 (Sudeste ${fmt(qs(1).c57, 1)}%, Brasil ${fmt(qs(2).c57, 1)}%).`,
     `São <b>${fmt(val("razao", gu, a), 1)}</b> discentes por docente permanente na UFSCar (Sudeste ${fmt(val("razao", gs, a), 1)}, Brasil ${fmt(val("razao", gb, a), 1)}), e o tempo médio de titulação é de <b>${fmt(val("meses", gu, a), 1)} meses</b>.`,
   ];
-  el.innerHTML = `<h2 class="sec">Panorama de ${a}</h2><p class="sub">Clique em um indicador para abrir a série histórica. A variação (▲▼) compara com ${ant ?? "–"}.</p>
+  el.innerHTML = `<section class="hero"><div class="hero-text"><span class="tag-hero">Dados abertos CAPES · ${ANOS[0]}–${ANOS.at(-1)}</span>
+      <h1>Panorama da pós-graduação stricto sensu da UFSCar em ${a}</h1>
+      <p>Programas, discentes, docentes e conceitos comparados com o Sudeste e o Brasil.</p></div>
+      <div class="hero-stat"><b>${fmt(val("mat", gu, a))}</b><span>discentes matriculados em ${a}</span></div></section>
+    <h2 class="sec">Acesso rápido</h2>
+    <div class="quick">${[["serie", "Série histórica"], ["programas", "Programas e conceitos"], ["niveis", "Indicadores por nível"], ["quadrienal", "Avaliação Quadrienal"], ["redes", "Programas em rede"], ["ranking", "Comparar IES"]].map(([t, n]) => `<button data-t="${t}">${n}</button>`).join("")}</div>
+    <h2 class="sec">Indicadores de ${a}</h2><p class="sub">Clique em um indicador para abrir a série histórica. A variação (▲▼) compara com ${ant ?? "–"}.</p>
     <div class="kpis">${cards}</div>
     <div class="insights"><ul>${ins.map(i => `<li>${i}</li>`).join("")}</ul></div>
     <div class="grade">
@@ -210,6 +221,7 @@ ABAS.geral = el => {
       <article class="card"><h3>Titulados por ano</h3><p class="sub">índice, ${ANOS[0]} = 100</p><div class="graf"><canvas id="g2"></canvas></div></article>
     </div>`;
   $$(".kpi", el).forEach(b => b.onclick = () => { S.metric = b.dataset.k; ir("serie"); });
+  $$(".quick button", el).forEach(b => b.onclick = () => ir(b.dataset.t));
   const idx = k => GRUPOS.map(g => { const s = serieDe(k, g); return linha(g.nome, cssVar(g.cor), s.map(v => s[0] ? 100 * v / s[0] : null), g.k === "u"); });
   grafico("g1", "line", ANOS, idx("mat"), { legend: true }); grafico("g2", "line", ANOS, idx("tit"), { legend: true });
 };
@@ -263,14 +275,14 @@ ABAS.serie = el => {
     const v0 = val(k, g, anos[0]), v1 = val(k, g, anos.at(-1)), n = anos.length - 1;
     const dif = soma ? pct(v1 - v0, v0) : (v1 ?? 0) - (v0 ?? 0), cg = soma && v0 > 0 && n > 0 ? 100 * ((v1 / v0) ** (1 / n) - 1) : null;
     return `<div class="kpi" style="cursor:default"><h3><i class="dot" style="background:${cssVar(g.cor)}"></i>${esc(g.nome)}</h3>
-      <div class="v" style="color:${cssVar(g.cor)}">${soma ? fmt(dif, 1) + "%" : (dif > 0 ? "+" : "") + fmt(dif, m.dec) + (m.suf ? " p.p." : "")}</div>
+      <div class="v">${soma ? fmt(dif, 1) + "%" : (dif > 0 ? "+" : "") + fmt(dif, m.dec) + (m.suf ? " p.p." : "")}</div>
       <ul><li><span>${anos[0]}</span><b>${fm(k, v0)}</b></li><li><span>${anos.at(-1)}</span><b>${fm(k, v1)}</b></li>${cg != null ? `<li><span>Crescimento médio anual</span><b>${fmt(cg, 2)}%</b></li>` : ""}</ul></div>`;
   }).join("");
   tabela($("#s-tab"), [{ h: "Ano" }, ...GRUPOS.map(g => ({ h: g.nome, f: v => fm(k, v) }))],
     anos.map(a => ({ id: a, v: [a, ...GRUPOS.map(g => val(k, g, a))] })), { ordem: 0, desc: true });
 
   const gu = GRUPOS[0], gas = [...new Set(Y.disc_a[S.ano].filter(r => gu.t(r)).map(r => r.ga))].sort();
-  const pal = [cssVar("--c-u"), cssVar("--c-se"), "#2da44e", "#e8a317", "#8250df", "#0d9488", "#d6336c", "#6c757d", "#a05a2c"];
+  const pal = CAT();
   grafico("s-ga", "bar", lab, gas.map((ga, i) => barra(cap(ga), pal[i % pal.length], anos.map(a => sum(rows("disc_a", a, gu, { area: false }).filter(r => r.sit === "MATRICULADO" && r.ga === ga))))), { stacked: true, dec: 0, legend: true });
   const nv = f => anos.map(a => sum(rows("disc_a", a, gu, { grau: false }).filter(r => r.sit === "MATRICULADO" && f(r.grau))));
   grafico("s-nv", "bar", lab, [barra("Mestrado", cssVar("--c-se"), nv(g => g.includes("MESTRADO"))), barra("Doutorado", cssVar("--c-u"), nv(g => g.includes("DOUTORADO")))], { stacked: true, dec: 0, legend: true });
@@ -309,7 +321,7 @@ ABAS.discentes = el => {
     </div>`;
   ["mat", "ing", "concl", "pdout", "meses", "estr"].forEach((k, i) => desenhaSerie(["d1", "d2", "d4", "d5", "d6", "d9"][i], k));
   const anos = anosRange(), gu = GRUPOS[0];
-  grafico("d3", "bar", anos.map(String), [barra("Ingressantes", cssVar("--c-se"), serieDe("ing", gu, anos)), barra("Titulados", "#2da44e", serieDe("tit", gu, anos)), barra("Desligados e abandonos", cssVar("--c-u"), serieDe("des", gu, anos))], { dec: 0, legend: true });
+  grafico("d3", "bar", anos.map(String), [barra("Ingressantes", cssVar("--c-se"), serieDe("ing", gu, anos)), barra("Titulados", "#2da44e", serieDe("tit", gu, anos)), barra("Desligados e abandonos", cssVar("--bad"), serieDe("des", gu, anos))], { dec: 0, legend: true });
   distribuicao("d7", "disc_b", r => r.sit === "MATRICULADO", "faixa", { ordem: ordemFaixa, rotulo: s => s.replace(" ANOS", "").replace("A", "a").toLowerCase() });
   distribuicao("d8", "disc_a", r => r.sit === "MATRICULADO", "ga", { topo: 9, semArea: true });
 };
@@ -437,7 +449,7 @@ ABAS.programas = el => {
   grafico("pg-g1", "bar", cs.map(c => "Nota " + c), GRUPOS.map((g, i) => barra(i === 0 ? "UFSCar (programas da UFSCar)" : g.nome, cssVar(g.cor), cs.map(c => pct(qr[i].filter(r => r.nota === c).length, qr[i].length)))), { suf: "%", legend: true });
   const porMun = {}; propios.forEach(p => { const c = campusDe(p.anos[A].mun); porMun[c] = (porMun[c] || 0) + 1; });
   const ms = Object.entries(porMun).sort((a, b) => b[1] - a[1]);
-  grafico("pg-g2", "doughnut", ms.map(m => m[0]), [{ data: ms.map(m => m[1]), backgroundColor: [cssVar("--c-u"), cssVar("--c-se"), "#2da44e", "#e8a317", "#8250df", "#0d9488"], borderWidth: 0 }], { legend: true, dec: 0 });
+  grafico("pg-g2", "doughnut", ms.map(m => m[0]), [{ data: ms.map(m => m[1]), backgroundColor: CAT(), borderWidth: 0 }], { legend: true, dec: 0 });
   charts["pg-g2"].options.scales = {}; charts["pg-g2"].update();
 };
 
@@ -549,7 +561,7 @@ ABAS.niveis = el => {
 
   const sufx = M[ind].suf, dec = M[ind].dec;
   grafico("n1", "bar", NIVEIS.map(n => n[1]), GRUPOS.map(x => barra(x.nome, cssVar(x.cor), NIVEIS.map(([n]) => { const v = valN(ind, x, a, n); return v === 0 && M[ind].kind === "soma" ? null : v; }))), { suf: sufx, dec, legend: true });
-  const pal = [cssVar("--c-u"), cssVar("--c-se"), "#e8a317", "#2da44e"];
+  const pal = [cssVar("--c-se"), cssVar("--c-br"), cssVar("--c-u"), "#6db3f2"];
   grafico("n2", "line", anos.map(String), NIVEIS.map(([n, t], i) => linha(t, pal[i], anos.map(y => { const v = valN(ind, g, y, n); return v === 0 && M[ind].kind === "soma" ? null : v; }), i === 0)), { suf: sufx, dec, legend: true });
   grafico("n3", "line", anos.map(String), GRUPOS.map(x => linha(x.nome, cssVar(x.cor), anos.map(y => { const v = valN(ind, x, y, nv); return v === 0 && M[ind].kind === "soma" ? null : v; }), x.k === "u")), { suf: sufx, dec, legend: true });
   grafico("n4", "bar", GRUPOS.map(x => x.nome), NIVEIS.map(([n, t], i) => barra(t, pal[i], GRUPOS.map(x => { const tot = valN("mat", x, a, ""); return pct(valN("mat", x, a, n), tot); }))), { stacked: true, suf: "%", legend: true, horizontal: true });
@@ -578,13 +590,13 @@ ABAS.redes = el => {
     <h2 class="sec">UFSCar sede (${sede.length})</h2><p class="sub">Programas coordenados pela UFSCar em parceria com outras IES. Estão incluídos nos totais da UFSCar.</p>
     <div class="rede-grid">${sede.map(card).join("") || '<p class="sub">Nenhum programa com os filtros atuais.</p>'}</div>`;
   $$(".rede", el).forEach(b => b.onclick = () => abrirPrograma(b.dataset.c));
-  const pal = [cssVar("--c-u"), cssVar("--c-se"), "#2da44e", "#e8a317", "#8250df", "#0d9488", "#d6336c", "#6c757d"];
+  const pal = CAT();
   grafico("r-g", "bar", ANOS.map(String), assoc.map((p, i) => barra(cap(p.nome), pal[i % pal.length], ANOS.map(a => D.serie[p.cod]?.[a]?.mat ?? null))), { stacked: true, dec: 0, legend: true });
 };
 
 // ---------- Comparar IES ----------
 const RK = ["prog", "mat", "ing", "tit", "perm", "razao", "conc", "meses"];
-const paleta = () => [cssVar("--c-u"), cssVar("--c-se"), "#e8a317", "#2da44e", "#8250df", "#d6336c", "#0d9488", "#6c757d"];
+const paleta = () => [cssVar("--c-u"), cssVar("--c-se"), cssVar("--c-br"), "#6db3f2", "#0f4a85", "#c9a227", "#8aa4c8", "#5d6877"];
 ABAS.ranking = el => {
   const lista = [...new Set(Y.disc_a[S.ano].map(r => r.ies).filter(Boolean))].filter(s => D.ies[s] && (S.univ === "all" || D.ies[s].jur === "FEDERAL"));
   const gI = s => ({ k: "i_" + s, t: r => r.ies === s && (r.rede !== "S" || S.incRede) });
@@ -661,12 +673,46 @@ function notaRede() {
     : `<b>Totais da UFSCar em ${S.ano}:</b> somente os ${nS} programas próprios (os ${nR} em rede estão fora da soma).`;
 }
 function ir(tab) { S.tab = tab; history.replaceState(null, "", "#" + tab); render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+function csvGrafico(id, titulo) {
+  const c = charts[id]; if (!c) return;
+  const { labels, datasets } = c.data, num = v => v == null ? "" : String(typeof v === "number" ? +v.toFixed(3) : v).replace(".", ",");
+  baixar(`${titulo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_").slice(0, 50) || "figura"}.csv`,
+    csv([["", ...datasets.map(d => d.label || "valor")], ...labels.map((l, i) => [l, ...datasets.map(d => num(d.data[i]))])]));
+}
+function decorarFiguras() {
+  let n = 0;
+  $$(".card", $("#tab-" + S.tab)).forEach(card => {
+    const cv = card.querySelector("canvas"); if (!cv || card.querySelector(".fig-top")) return;
+    n++;
+    const top = document.createElement("div"); top.className = "fig-top";
+    top.innerHTML = `<span class="fig-num">FIGURA ${String(n).padStart(2, "0")}</span><button type="button" class="btn-outline mini" title="Baixar os dados desta figura em CSV">CSV</button>`;
+    card.prepend(top);
+    top.querySelector("button").onclick = () => csvGrafico(cv.id, card.querySelector("h3")?.innerText || "figura");
+  });
+}
+function sincFiltros() {
+  $("#f-area").value = S.area; $("#f-grau").value = S.grau; $("#f-sem").checked = S.sem; $("#f-rede").checked = S.incRede; $("#f-ano").value = S.ano;
+  $$("#f-univ button").forEach(x => x.classList.toggle("on", x.dataset.v === S.univ));
+}
+function chipsFiltros() {
+  const l = [];
+  if (S.univ === "all") l.push(["Todas as IES", () => S.univ = "fed"]);
+  if (S.area) l.push([cap(S.area), () => S.area = ""]);
+  if (S.grau) l.push([$("#f-grau").selectedOptions[0].text, () => S.grau = ""]);
+  if (S.sem) l.push(["Sem a UFSCar nas comparações", () => S.sem = false]);
+  if (!S.incRede) l.push(["Sem os 4 programas em rede", () => S.incRede = true]);
+  if (S.ano !== ANOS.at(-1)) l.push(["Ano de referência " + S.ano, () => S.ano = ANOS.at(-1)]);
+  const el = $("#chips-out");
+  el.innerHTML = l.map(([t], i) => `<button type="button" class="chip-out" data-i="${i}" title="Remover filtro">${esc(t)} ×</button>`).join("");
+  $$(".chip-out", el).forEach(b => b.onclick = () => { l[+b.dataset.i][1](); sincFiltros(); render(); });
+}
 function render() {
   destruir(); memo = new Map(); GRUPOS = grupos(); notaRede();
   $("#ano-txt").textContent = S.ano;
   $$("#abas button").forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
   $$(".tab").forEach(t => t.hidden = t.id !== "tab-" + S.tab);
   ABAS[S.tab]($("#tab-" + S.tab));
+  decorarFiguras(); chipsFiltros();
 }
 function iniciaFiltros() {
   const areas = [...new Set(Y.disc_a[ANOS.at(-1)].map(r => r.ga).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt"));
@@ -683,13 +729,13 @@ function iniciaFiltros() {
   $("#m-fechar").onclick = () => $("#modal").close();
   $("#modal").addEventListener("close", destruirModal);
   $("#modal").addEventListener("click", e => { if (e.target.id === "modal") $("#modal").close(); });
-  $("#tema").onclick = () => { const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = t; try { localStorage.setItem("tema", t); } catch { } render(); };
+  $("#tema").onclick = () => { const atual = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light"), t = atual === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = t; try { localStorage.setItem("tema", t); } catch { } render(); };
   const fonte = d => { const v = Math.min(20, Math.max(12, (parseInt(getComputedStyle(document.documentElement).getPropertyValue("--fs")) || 15) + d)); document.documentElement.style.setProperty("--fs", v + "px"); try { localStorage.setItem("fonte", v); } catch { } };
   $("#fonte-mais").onclick = () => fonte(1); $("#fonte-menos").onclick = () => fonte(-1);
   try { const f = localStorage.getItem("fonte"); if (f) document.documentElement.style.setProperty("--fs", f + "px"); } catch { }
 }
 (async function () {
-  try { const t = localStorage.getItem("tema"); document.documentElement.dataset.theme = t || "light"; } catch { }
+  try { const t = localStorage.getItem("tema"); if (t) document.documentElement.dataset.theme = t; } catch { }
   try { await carregar(); } catch (e) { $("#carregando").textContent = "Não foi possível carregar os dados: " + e.message; return; }
   $("#carregando").remove(); $("#gerado").textContent = D.meta.gerado_em; $("#faixa-anos").textContent = `${ANOS[0]}–${ANOS.at(-1)}`;
   iniciaFiltros(); statusPainel();

@@ -5,3 +5,4 @@ etl/run.log
 etl/fontes/tema/
 .claude/
 etl/fontes/*.html
+etl/fontes/guia-*
