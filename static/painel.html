@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Painel de Indicadores · ProPlan UFSCar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/painel.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
-<div class="util"><div><span>Universidade Federal de São Carlos · Pró-Reitoria de Planejamento, Governança e Gestão</span><span>Fontes: TCU · CGU · INEP · CAPES · ProPlan · <span id="gerado"></span></span></div></div>
+<a class="skip" href="#main">Ir para o conteúdo</a>
+<div class="util"><div><span>UFSCar · Pró-Reitoria de Planejamento, Governança e Gestão</span><span>Dados abertos oficiais · <span id="gerado"></span></span></div></div>
 <nav aria-label="Seções do painel"><div class="in" id="nav" role="tablist">
   <button class="tab" role="tab" data-t="home">Visão geral</button>
   <button class="tab" role="tab" data-t="tcu">Indicadores TCU</button>
@@ -18,13 +19,18 @@
   <button class="tab" role="tab" data-t="iesgo">TCU · iESGo</button>
   <button class="tab" role="tab" data-t="lai">CGU · Acesso à Informação</button>
   <button class="tab" role="tab" data-t="ouv">CGU · Ouvidoria</button>
+  <div class="nav-tools"><button id="bTheme" title="Alternar tema claro/escuro">◐ Tema</button></div>
 </div></nav>
-<main>
+<main id="main">
 <div id="err"></div>
 <div id="loading"><div class="grid"><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div></div></div>
 
 <!-- ===== VISÃO GERAL ===== -->
 <section id="home">
+  <div class="hero"><div class="hero-text"><span class="tag">TCU · CGU</span><h1>Painel de Indicadores da UFSCar</h1><p>Governança, gestão e transparência da universidade, comparadas com as universidades federais de São Paulo, do Sudeste e do Brasil.</p></div>
+    <div class="hero-stat"><b id="heroNum">—</b><span id="heroLbl">iESGo 2024 (TCU)</span></div></div>
+  <h2>Acesso rápido</h2>
+  <div class="quick" id="quick"></div>
   <h2>Visão geral</h2>
   <p class="lead">Resumo dos principais indicadores. Clique em um cartão para abrir os detalhes.</p>
   <div class="grid" id="homeKpis"></div>
@@ -132,7 +138,10 @@
 </main>
 <button class="btn" id="top" onclick="scrollTo({top:0})">↑ Topo</button>
 <div id="toast" role="status"></div>
-<footer>Painel construído com dados abertos oficiais · Pró-Reitoria de Planejamento, Governança e Gestão · UFSCar</footer>
+<footer>
+  <p>Fontes: TCU (iESGo, Decisão 408/2002), CGU (Fala.BR: acesso à informação e ouvidoria), INEP (Censo da Educação Superior), CAPES e ProPlan/UFSCar.</p>
+  <p>Painel independente, construído com dados abertos oficiais. Não é uma publicação oficial do TCU nem da CGU. Indicadores comparativos são calculados com fórmulas simplificadas.</p>
+</footer>
 <script src="/static/painel.js"></script>
 </body>
 </html>

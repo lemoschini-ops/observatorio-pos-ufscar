@@ -1,7 +1,12 @@
 /* Painel de Indicadores · UFSCar — interface dinâmica.
    Estado na URL (#tab=ouv&de=2022...), então links, voltar/avançar e "copiar link" preservam os filtros. */
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-const C = {navy: '#244578', blue: '#086CA3', sky: '#64BEE8', ice: '#A7DAF2', gray: '#B9BEC6', hi: '#E8791C', ok: '#2e7d32', bad: '#b42318', warn: '#d99a2b'};
+const dark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+const cv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+/* Paleta de dados do guia de design: ordem fixa; amarelo = entidade em foco (UFSCar); demais = azul-marinho. */
+const PALETTE = ['#244578', '#1b8fd2', '#f2b705', '#2a9d8f', '#e76f51', '#7b5ea7', '#0f4a85', '#8ab17d', '#c44569', '#64748b'];
+const C = {get navy() { return dark() ? '#6db3f2' : '#244578'; }, get base() { return dark() ? '#6db3f2' : '#244578'; }, blue: '#0f4a85', sky: '#1b8fd2', ice: '#8794a8', gray: '#8794a8', yellow: '#f2b705', hi: '#f2b705', teal: '#2a9d8f', coral: '#e76f51', purple: '#7b5ea7',
+  get ok() { return cv('--good'); }, get bad() { return cv('--bad'); }, get warn() { return cv('--warn'); }};
 const fmt = (v, d = 1) => v == null || isNaN(v) ? '—' : Number(v).toLocaleString('pt-BR', {minimumFractionDigits: d, maximumFractionDigits: d});
 const pct = v => v == null ? '—' : fmt(v * 100, 1) + '%';
 const brl = v => 'R$ ' + fmt(v / 1e6, 1) + ' mi';
@@ -12,7 +17,7 @@ const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'O
 const TABS = ['home', 'tcu', 'comp', 'iesgo', 'lai', 'ouv'];
 let D, charts = {}, csvStore = {}, tab = 'home';
 Chart.defaults.font.family = '"Open Sans",sans-serif';
-Chart.defaults.color = '#4D4D4D';
+function themeCharts() { Chart.defaults.color = cv('--muted'); Chart.defaults.borderColor = cv('--border'); }
 
 /* ---------- estado na URL ---------- */
 const getS = () => Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
@@ -49,6 +54,8 @@ document.addEventListener('click', e => {
 addEventListener('scroll', () => $('#top').style.display = scrollY > 500 ? 'block' : 'none');
 $('#nav').addEventListener('keydown', e => { const i = TABS.indexOf(tab); if (e.key === 'ArrowRight') go(TABS[(i + 1) % TABS.length]); if (e.key === 'ArrowLeft') go(TABS[(i + TABS.length - 1) % TABS.length]); });
 $$('#nav .tab').forEach(b => b.onclick = () => go(b.dataset.t));
+try { const t = localStorage.getItem('tema'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+$('#bTheme').onclick = () => { const t = dark() ? 'light' : 'dark'; document.documentElement.dataset.theme = t; try { localStorage.setItem('tema', t); } catch (e) {} render(); };
 
 /* Tabela ordenável, com busca opcional. cols: {k,label,n,fmt,get}. */
 function dtable(el, cols, rows, o = {}) {
@@ -86,6 +93,7 @@ fetch('/api/painel').then(r => { if (!r.ok) throw new Error(r.status === 404 ? '
 
 function render() {
   if (!D) return;
+  themeCharts();
   const s = getS(); tab = TABS.includes(s.tab) ? s.tab : 'home';
   $$('#nav .tab').forEach(b => { const on = b.dataset.t === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
   $$('main > section').forEach(e => e.classList.toggle('on', e.id === tab));
@@ -106,9 +114,12 @@ function home() {
   if (O) { const a = Math.max(...O.linhas.filter(r => r[3] === 0).map(r => r[0])), rs = O.linhas.filter(r => r[3] === 0 && r[0] === a), p = rs.filter(r => r[7] != null), ref = O.referencia[a]?.universidades_federais;
     cards.push(kpi(`Manifestações de Ouvidoria ${a}`, fmt(rs.length, 0), `${fmt(100 * mean(p.map(r => r[7])), 1)}% no prazo (universidades: ${fmt(ref?.pct_no_prazo)}%)`, {go: {tab: 'ouv'}})); }
   $('#homeKpis').innerHTML = cards.join('');
+  if (ie) { $('#heroNum').textContent = pct(ie.ufscar); $('#heroLbl').textContent = `iESGo 2024 · ${ie.Brasil.posicao}º de ${ie.Brasil.n} universidades federais`; }
+  $('#quick').innerHTML = [['tcu', 'Indicadores TCU'], ['comp', 'Comparar universidades'], ['iesgo', 'iESGo'], ['lai', 'Acesso à Informação'], ['ouv', 'Ouvidoria']].map(([t, l]) => `<button data-q="${t}">${l}</button>`).join('');
+  $('#quick').onclick = e => { const b = e.target.closest('[data-q]'); if (b) go(b.dataset.q); };
   if (R) {
     const ks = Object.keys(K.metricas).filter(k => R[k]?.Brasil), pc = k => { const g = R[k].Brasil; return g.n > 1 ? 100 * (g.n - g.posicao) / (g.n - 1) : 50; };
-    chart('cPerfil', {type: 'bar', data: {labels: ks.map(k => K.metricas[k].nome), datasets: [{data: ks.map(pc), backgroundColor: ks.map(k => pc(k) >= 66 ? C.navy : pc(k) >= 33 ? C.sky : C.ice)}]},
+    chart('cPerfil', {type: 'bar', data: {labels: ks.map(k => K.metricas[k].nome), datasets: [{data: ks.map(pc), backgroundColor: ks.map(k => pc(k) >= 66 ? C.base : pc(k) >= 33 ? C.sky : C.gray)}]},
       options: {indexAxis: 'y', plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => `Posição ${R[ks[c.dataIndex]].Brasil.posicao}º de ${R[ks[c.dataIndex]].Brasil.n} (percentil ${fmt(c.parsed.x, 0)})`}}}, scales: {x: {min: 0, max: 100}, y: {ticks: {font: {size: 11}}}}, onClick: (e, el) => el[0] && go('comp', {met: ks[el[0].index]}), onHover: (e, el) => e.native.target.style.cursor = el.length ? 'pointer' : 'default'}});
   }
   const ins = [];
@@ -172,18 +183,18 @@ function comp(s) {
   const L = U.filter(inG).filter(u => u[met] != null).sort((a, b) => b[met] - a[met]);
   $('#metDesc').textContent = `${M[met].nome} — ${M[met].descricao} Grupo: ${GR[grp]} (${L.length}). Clique em uma barra para destacar a universidade.`;
   $('#rankBox').style.height = Math.max(300, L.length * 17 + 50) + 'px';
-  const colorOf = u => isU(u) ? C.navy : dest.includes(u.sigla) ? C.hi : C.ice;
+  const colorOf = u => isU(u) ? C.yellow : dest.includes(u.sigla) ? C.teal : C.base;
   chart('cRank', {type: 'bar', data: {labels: L.map(u => u.sigla), datasets: [{data: L.map(u => u[met]), backgroundColor: L.map(colorOf)}]},
     options: {indexAxis: 'y', plugins: {legend: {display: false}, tooltip: {callbacks: {title: i => L[i[0].dataIndex].nome, label: c => `${fmt(c.parsed.x, 2)} ${M[met].unidade}`}}}, scales: {y: {ticks: {font: {size: 11}, autoSkip: false}}}, onClick: (e, el) => el[0] && !isU(L[el[0].index]) && toggle(L[el[0].index].sigla), onHover: (e, el) => e.native.target.style.cursor = el.length ? 'pointer' : 'default'}});
   setCsv('rank', `ranking_${met}_${grp}`, ['Posição', 'Sigla', 'Universidade', 'UF', M[met].nome], L.map((u, i) => [i + 1, u.sigla, u.nome, u.uf, u[met]]));
 
   // evolução
   const anos = K.anos.map(String), line = (l, c, f, w = 2) => ({label: l, data: anos.map(f), borderColor: c, backgroundColor: c, tension: .2, borderWidth: w, pointRadius: 3});
-  chart('cEvol', {type: 'line', data: {labels: anos, datasets: [line('UFSCar', C.navy, a => K.resumo[a]?.[met]?.ufscar, 3), line('Média SP', C.blue, a => K.resumo[a]?.[met]?.SP?.media), line('Média Sudeste', C.sky, a => K.resumo[a]?.[met]?.Sudeste?.media), line('Média Brasil', C.gray, a => K.resumo[a]?.[met]?.Brasil?.media)]}, options: {plugins: {title: {display: true, text: M[met].nome}}}});
+  chart('cEvol', {type: 'line', data: {labels: anos, datasets: [line('UFSCar', C.navy, a => K.resumo[a]?.[met]?.ufscar, 3), line('Média SP', C.sky, a => K.resumo[a]?.[met]?.SP?.media), line('Média Sudeste', C.teal, a => K.resumo[a]?.[met]?.Sudeste?.media), line('Média Brasil', C.gray, a => K.resumo[a]?.[met]?.Brasil?.media)]}, options: {plugins: {title: {display: true, text: M[met].nome}}}});
 
   // dispersão
   const Pt = U.filter(inG).filter(u => u[X] != null && u[Y] != null), pts = f => Pt.filter(f).map(u => ({x: u[X], y: u[Y], u}));
-  chart('cDisp', {type: 'scatter', data: {datasets: [{label: 'Universidades', data: pts(u => !isU(u) && !dest.includes(u.sigla)), backgroundColor: C.ice, pointRadius: 4}, {label: 'Destacadas', data: pts(u => dest.includes(u.sigla) && !isU(u)), backgroundColor: C.hi, pointRadius: 7}, {label: 'UFSCar', data: pts(isU), backgroundColor: C.navy, pointRadius: 8}]},
+  chart('cDisp', {type: 'scatter', data: {datasets: [{label: 'Universidades', data: pts(u => !isU(u) && !dest.includes(u.sigla)), backgroundColor: C.sky, pointRadius: 4}, {label: 'Destacadas', data: pts(u => dest.includes(u.sigla) && !isU(u)), backgroundColor: C.teal, pointRadius: 7}, {label: 'UFSCar', data: pts(isU), backgroundColor: C.yellow, borderColor: C.base, borderWidth: 1.5, pointRadius: 9}]},
     options: {scales: {x: {title: {display: true, text: M[X].nome, font: {size: 11}}}, y: {title: {display: true, text: M[Y].nome, font: {size: 11}}}}, plugins: {tooltip: {callbacks: {label: c => `${c.raw.u.nome}: ${fmt(c.raw.x, 2)} · ${fmt(c.raw.y, 2)}`}}}, onClick: (e, el) => { const u = el[0] && charts.cDisp.data.datasets[el[0].datasetIndex].data[el[0].index].u; if (u && !isU(u)) toggle(u.sigla); }}});
 
   // iESGo por grupo
@@ -205,10 +216,10 @@ function iesgo(s) {
   fillSelect('#selIdx', i.indices.map(x => [x.sigla, `${x.sigla} – ${x.nome}`]), idx, v => setS({idx: v}));
   fillSelect('#selTop', [['15', '15 melhores + UFSCar'], ['30', '30 melhores + UFSCar'], ['all', 'todas']], top, v => setS({top: v}));
   const base = ['iESGo', 'iGG', 'iES', 'iGovPub', 'iGest', 'Lid', 'Estr', 'Cont'].map(g);
-  chart('cIdx', {type: 'bar', data: {labels: base.map(x => x.sigla), datasets: [{label: 'UFSCar', data: base.map(x => x.ufscar * 100), backgroundColor: base.map(x => x.sigla === idx ? C.hi : C.navy)}, {label: 'Média do grupo', data: base.map(x => x.media_ifes * 100), backgroundColor: C.ice}, {label: 'Máximo do grupo', data: base.map(x => x.max_ifes * 100), backgroundColor: 'transparent', borderColor: C.blue, borderWidth: 1.5, borderDash: [4, 3]}]},
+  chart('cIdx', {type: 'bar', data: {labels: base.map(x => x.sigla), datasets: [{label: 'UFSCar', data: base.map(x => x.ufscar * 100), backgroundColor: base.map(x => x.sigla === idx ? C.teal : C.yellow)}, {label: 'Média do grupo', data: base.map(x => x.media_ifes * 100), backgroundColor: C.base}, {label: 'Máximo do grupo', data: base.map(x => x.max_ifes * 100), backgroundColor: 'transparent', borderColor: C.sky, borderWidth: 1.5, borderDash: [4, 3]}]},
     options: {scales: {y: {min: 0, max: 100, ticks: {callback: v => v + '%'}}}, onClick: (e, el) => el[0] && setS({idx: base[el[0].index].sigla})}});
   const P = i.pares.filter(p => p.iGG != null && p.iES != null);
-  chart('cPares', {type: 'scatter', data: {datasets: [{label: 'Instituições', data: P.filter(p => p.sigla !== 'UFSCar').map(p => ({x: p.iGG * 100, y: p.iES * 100, n: p.sigla})), backgroundColor: C.ice, pointRadius: 3.5}, {label: 'UFSCar', data: P.filter(p => p.sigla === 'UFSCar').map(p => ({x: p.iGG * 100, y: p.iES * 100, n: p.sigla})), backgroundColor: C.navy, pointRadius: 8}]},
+  chart('cPares', {type: 'scatter', data: {datasets: [{label: 'Instituições', data: P.filter(p => p.sigla !== 'UFSCar').map(p => ({x: p.iGG * 100, y: p.iES * 100, n: p.sigla})), backgroundColor: C.sky, pointRadius: 3.5}, {label: 'UFSCar', data: P.filter(p => p.sigla === 'UFSCar').map(p => ({x: p.iGG * 100, y: p.iES * 100, n: p.sigla})), backgroundColor: C.yellow, borderColor: C.base, borderWidth: 1.5, pointRadius: 9}]},
     options: {scales: {x: {title: {display: true, text: 'iGG (%)'}, min: 0, max: 100}, y: {title: {display: true, text: 'iES (%)'}, min: 0, max: 100}}, plugins: {tooltip: {callbacks: {label: c => `${c.raw.n}: iGG ${c.raw.x.toFixed(0)}% · iES ${c.raw.y.toFixed(0)}%`}}}}});
   dtable('#tIdx', [{label: 'Índice', get: x => x.sigla, fmt: (v, x) => `${v}<div class="pos">${esc(x.nome)}</div>`}, {label: 'UFSCar', n: 1, get: x => x.ufscar, fmt: v => pct(v)}, {label: 'Faixa', get: x => x.faixa, fmt: v => `<span style="color:${FAIXA[v]};font-weight:600">${v || '—'}</span>`}, {label: 'Média', n: 1, get: x => x.media_ifes, fmt: v => pct(v)}, {label: 'Posição', n: 1, get: x => x.posicao_ifes, fmt: (v, x) => `${v ?? '—'}º/${x.n_ifes}`}],
     i.indices, {sort: null, sel: x => x.sigla === idx, onRow: x => setS({idx: x.sigla})});
@@ -217,7 +228,7 @@ function iesgo(s) {
   $('#hRank').textContent = `Ranking · ${X.nome}`;
   const tp = top === 'all' ? rk : rk.filter(r => r.pos <= +top || r.sigla === 'UFSCar');
   $('#topBox').style.height = Math.max(220, tp.length * 17 + 40) + 'px';
-  chart('cTop', {type: 'bar', data: {labels: tp.map(r => `${r.pos}º ${r.sigla}`), datasets: [{data: tp.map(r => r[idx] * 100), backgroundColor: tp.map(r => r.sigla === 'UFSCar' ? C.navy : C.ice)}]}, options: {indexAxis: 'y', plugins: {legend: {display: false}, tooltip: {callbacks: {title: i => tp[i[0].dataIndex].nome, label: c => fmt(c.parsed.x) + '%'}}}, scales: {x: {min: 0, max: 100, ticks: {callback: v => v + '%'}}, y: {ticks: {font: {size: 11}, autoSkip: false}}}}});
+  chart('cTop', {type: 'bar', data: {labels: tp.map(r => `${r.pos}º ${r.sigla}`), datasets: [{data: tp.map(r => r[idx] * 100), backgroundColor: tp.map(r => r.sigla === 'UFSCar' ? C.yellow : C.base)}]}, options: {indexAxis: 'y', plugins: {legend: {display: false}, tooltip: {callbacks: {title: i => tp[i[0].dataIndex].nome, label: c => fmt(c.parsed.x) + '%'}}}, scales: {x: {min: 0, max: 100, ticks: {callback: v => v + '%'}}, y: {ticks: {font: {size: 11}, autoSkip: false}}}}});
   dtable('#tRank', [{label: '#', n: 1, get: r => r.pos}, {label: 'Instituição', get: r => r.sigla, fmt: (v, r) => `${esc(v)}<div class="pos">${esc(r.nome)}</div>`}, {label: idx, n: 1, get: r => r[idx], fmt: v => pct(v)}], rk, {sort: 0, dir: 1, cls: r => r.sigla === 'UFSCar' ? 'uf' : '', search: true});
   setCsv('irank', 'iesgo_ranking_' + idx, ['Posição', 'Sigla', 'Instituição', idx], rk.map(r => [r.pos, r.sigla, r.nome, r[idx]]));
   $('#srcIesgo').innerHTML = `Fonte: ${src({nome: i.fonte, url: i.url})}. O TCU publica o resultado como planilha (sem API); <code>etl/build.py</code> baixa e lê a planilha oficial. Autoavaliação das organizações.`;
@@ -234,11 +245,11 @@ function lai(s) {
     kpi('Respondidos no prazo', fmt(u.ufscar.pct_no_prazo) + '%', `Universidades federais: ${fmt(u.universidades_federais.pct_no_prazo)}%`, {x: delta(u.ufscar.pct_no_prazo, u.universidades_federais.pct_no_prazo, false, 1, ' p.p.')}) +
     kpi('Acesso concedido (total/parcial)', fmt(u.ufscar.pct_acesso_concedido) + '%', `Recursos: ${fmt(u.ufscar.recursos, 0)} (${fmt(u.ufscar.recursos_por_100_pedidos)} por 100 pedidos)`);
   const ln = (l, c, f) => ({label: l, data: A.map(f), borderColor: c, backgroundColor: c, tension: .2}), click = {onClick: (e, el) => el[0] && setS({ano: A[el[0].index].ano})};
-  chart('cPed', {type: 'bar', data: {labels: anos, datasets: [{data: A.map(a => a.ufscar.pedidos), backgroundColor: A.map(a => a.ano === ano ? C.hi : C.navy)}]}, options: {plugins: {legend: {display: false}}, ...click}});
+  chart('cPed', {type: 'bar', data: {labels: anos, datasets: [{data: A.map(a => a.ufscar.pedidos), backgroundColor: A.map(a => a.ano === ano ? C.yellow : C.base)}]}, options: {plugins: {legend: {display: false}}, ...click}});
   chart('cTempo', {type: 'line', data: {labels: anos, datasets: [ln('UFSCar', C.navy, a => a.ufscar.tempo_medio_dias), ln('Universidades federais', C.sky, a => a.universidades_federais.tempo_medio_dias), ln('Executivo federal', C.gray, a => a.executivo_federal.tempo_medio_dias)]}, options: {scales: {y: {beginAtZero: true}}, ...click}});
   chart('cPrazo', {type: 'line', data: {labels: anos, datasets: [ln('UFSCar', C.navy, a => a.ufscar.pct_no_prazo), ln('Universidades federais', C.sky, a => a.universidades_federais.pct_no_prazo), ln('Executivo federal', C.gray, a => a.executivo_federal.pct_no_prazo)]}, options: {scales: {y: {min: 50, max: 100, ticks: {callback: v => v + '%'}}}, ...click}});
   const a = u.ufscar;
-  chart('cDec', {type: 'doughnut', data: {labels: a.decisoes.map(x => x[0]), datasets: [{data: a.decisoes.map(x => x[1]), backgroundColor: [C.navy, C.blue, C.sky, C.ice, C.gray, C.warn, C.bad]}]}, options: {plugins: {legend: {position: 'right', labels: {boxWidth: 12}}}}});
+  chart('cDec', {type: 'doughnut', data: {labels: a.decisoes.map(x => x[0]), datasets: [{data: a.decisoes.map(x => x[1]), backgroundColor: PALETTE}]}, options: {plugins: {legend: {position: 'right', labels: {boxWidth: 12}}}}});
   chart('cAss', {type: 'bar', data: {labels: a.assuntos.map(x => x[0]), datasets: [{data: a.assuntos.map(x => x[1]), backgroundColor: C.blue}]}, options: {indexAxis: 'y', plugins: {legend: {display: false}}}});
   chart('cMes', {type: 'bar', data: {labels: MESES, datasets: [{data: a.por_mes, backgroundColor: C.navy}]}, options: {plugins: {legend: {display: false}}}});
   $('#srcLai').innerHTML = `Fonte: ${src({nome: L.fonte, url: L.url})}. ${L.nota} O arquivo “filtrado” da CGU exclui pedidos com informação restrita; os totais podem diferir do Painel LAI. *Ano em curso.`;
@@ -274,7 +285,7 @@ function ouv(s) {
     kpi('Demanda atendida', k.atendida == null ? '—' : fmt(k.atendida) + '%', `${fmt(k.nat, 0)} respostas à pesquisa`);
 
   const inR = a => a >= Math.min(de, ate) && a <= Math.max(de, ate);
-  const tipoCol = [C.navy, C.blue, C.sky, C.ice, C.gray, C.warn], cols = T.map((t, i) => tipoCol[i % tipoCol.length]);
+  const tipoCol = PALETTE.slice(0, 6), cols = T.map((t, i) => tipoCol[i % tipoCol.length]);
   const byAnoTipo = T.map((t, ti) => ({label: t, data: anosAll.map(a => base.filter(r => r[0] === a && r[OC.tipo] === ti && okAss(r)).length), backgroundColor: ctx => (inR(anosAll[ctx.dataIndex]) ? cols[ti] : cols[ti] + '44'), hidden: tipos.length > 0 && !tipos.includes(t)}));
   chart('cOAno', {type: 'bar', data: {labels: anosAll, datasets: byAnoTipo}, options: {scales: {x: {stacked: true}, y: {stacked: true}}, onClick: (e, el) => el[0] && setS({de: anosAll[el[0].index], ate: anosAll[el[0].index]}), plugins: {legend: {labels: {boxWidth: 12}}}}});
   const bt = T.map(t => base.filter(r => okAno(r) && okAss(r) && T[r[OC.tipo]] === t).length);
@@ -285,7 +296,7 @@ function ouv(s) {
   chart('cOPrazo', {type: 'line', data: {labels: anosAll, datasets: [ln('UFSCar (filtros)', C.navy, byAno(rs => st(rs).prazo), 3), ln('Universidades federais', C.sky, refS('pct_no_prazo')), ln('Executivo federal', C.gray, refS('pct_no_prazo', 'executivo_federal'))]}, options: {scales: {y: {min: 50, max: 100, ticks: {callback: v => v + '%'}}}}});
   const ac = {}; base.filter(r => okTipo(r) && okAno(r)).forEach(r => ac[r[OC.ass]] = (ac[r[OC.ass]] || 0) + 1);
   const top = Object.entries(ac).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  chart('cOAss', {type: 'bar', data: {labels: top.map(x => assNome(x[0])), datasets: [{data: top.map(x => x[1]), backgroundColor: top.map(x => assNome(x[0]) === ass ? C.hi : C.blue)}]}, options: {indexAxis: 'y', plugins: {legend: {display: false}}, onClick: (e, el) => el[0] && setS({ass: assNome(top[el[0].index][0]) === ass ? '' : assNome(top[el[0].index][0])})}});
+  chart('cOAss', {type: 'bar', data: {labels: top.map(x => assNome(x[0])), datasets: [{data: top.map(x => x[1]), backgroundColor: top.map(x => assNome(x[0]) === ass ? C.yellow : C.sky)}]}, options: {indexAxis: 'y', plugins: {legend: {display: false}}, onClick: (e, el) => el[0] && setS({ass: assNome(top[el[0].index][0]) === ass ? '' : assNome(top[el[0].index][0])})}});
   const mes = MESES.map((m, i) => rows.filter(r => r[OC.mes] === i + 1).length);
   chart('cOMes', {type: 'bar', data: {labels: MESES, datasets: [{data: mes, backgroundColor: C.navy}]}, options: {plugins: {legend: {display: false}}}});
   const B = [['0–5', 0, 5], ['6–10', 6, 10], ['11–20', 11, 20], ['21–30', 21, 30], ['> 30', 31, 1e9]], dd = rows.map(r => r[OC.dias]).filter(x => x != null);
