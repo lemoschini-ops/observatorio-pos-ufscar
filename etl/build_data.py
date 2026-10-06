@@ -56,12 +56,17 @@ PACOTES = {
 # "ies" só vale para o Sudeste (fora dele fica vazio) e "ie" marca apenas a UFSCar,
 # o que mantém os arquivos pequenos sem perder os totais do Brasil.
 CUBOS = {
-    "prog": (["ies", "reg", "jur", "ga", "grau", "conc", "sit"], ["n"]),
-    "disc_a": (["ies", "reg", "jur", "ga", "grau", "sit", "ing"], ["n", "meses"]),
-    "disc_b": (["ie", "reg", "jur", "faixa", "nac", "grau", "sit", "ing"], ["n"]),
-    "doc_a": (["ies", "reg", "jur", "ga", "cat", "reg_trab", "dr"], ["n"]),
-    "doc_b": (["ie", "reg", "jur", "cat", "faixa", "nac", "bolsa", "ext"], ["n"]),
+    "prog": (["ies", "reg", "jur", "ga", "grau", "conc", "sit", "rede"], ["n"]),
+    "disc_a": (["ies", "reg", "jur", "ga", "grau", "sit", "ing", "rede"], ["n", "meses"]),
+    "disc_b": (["ie", "reg", "jur", "faixa", "nac", "grau", "sit", "ing", "rede"], ["n"]),
+    "doc_a": (["ies", "reg", "jur", "ga", "grau", "cat", "reg_trab", "dr", "rede"], ["n"]),
+    "doc_b": (["ie", "reg", "jur", "cat", "faixa", "nac", "bolsa", "ext", "rede"], ["n"]),
 }
+# "rede" = "S" marca linhas COPIADAS dos programas em rede em que a UFSCar é apenas associada.
+# A CAPES registra esses programas sob a IES coordenadora e não separa discentes/docentes por
+# instituição; a cópia (com ies/ie = UFSCAR) permite somá-los aos totais da UFSCar. As linhas
+# originais (rede = "") continuam na coordenadora, de modo que Sudeste e Brasil não duplicam.
+REDE_UFSCAR = ("UFSCAR", "SUDESTE", "FEDERAL")
 # medidas da série por programa (UFSCar e redes)
 SERIE_DISC = ["mat", "tit", "ing", "des", "meses", "estr", "mat_m", "mat_d"]
 SERIE_DOC = ["doc", "perm", "dr"]
@@ -148,12 +153,14 @@ def agregar_prog(url):
     for r in linhas_csv(url):
         ano = inteiro(r["AN_BASE"])
         sig = r["SG_ENTIDADE_ENSINO"]
-        cubo[(ano, ies_sudeste(r), r["NM_REGIAO"], r["CS_STATUS_JURIDICO"], r["NM_GRANDE_AREA_CONHECIMENTO"],
-              r["NM_GRAU_PROGRAMA"], r["CD_CONCEITO_PROGRAMA"], r["DS_SITUACAO_PROGRAMA"])].add(r["CD_PROGRAMA_IES"])
+        dims = (r["NM_GRANDE_AREA_CONHECIMENTO"], r["NM_GRAU_PROGRAMA"], r["CD_CONCEITO_PROGRAMA"], r["DS_SITUACAO_PROGRAMA"])
+        cubo[(ano, ies_sudeste(r), r["NM_REGIAO"], r["CS_STATUS_JURIDICO"], *dims, "")].add(r["CD_PROGRAMA_IES"])
         if r["NM_REGIAO"] == "SUDESTE":
             info[sig] = [r["NM_ENTIDADE_ENSINO"], r["SG_UF_PROGRAMA"], r["CS_STATUS_JURIDICO"]]
         rede = r["IN_REDE"] == "SIM"
         associadas = [s.strip() for s in r["SG_ENTIDADE_ENSINO_REDE"].split(";") if s.strip()]
+        if rede and UFSCAR in associadas and sig != UFSCAR:
+            cubo[(ano, *REDE_UFSCAR, *dims, "S")].add(r["CD_PROGRAMA_IES"])
         if sig == UFSCAR or (rede and UFSCAR in associadas):
             meta.append({
                 "ano": ano, "cod": r["CD_PROGRAMA_IES"], "nome": r["NM_PROGRAMA_IES"],
@@ -178,14 +185,21 @@ def agregar_pessoas(base, url, codigos):
         ie, ies = marca_ufscar(r), ies_sudeste(r)
         cod = r["CD_PROGRAMA_IES"]
         alvo = (r["SG_ENTIDADE_ENSINO"] == UFSCAR) or cod in codigos
+        copia = cod in codigos and r["SG_ENTIDADE_ENSINO"] != UFSCAR  # programa em rede com a UFSCar associada
         if base == "disc":
             sit, ing, grau = r["NM_SITUACAO_DISCENTE"], r["ST_INGRESSANTE"], r["DS_GRAU_ACADEMICO_DISCENTE"]
             nac = "ESTRANGEIRO" if r["DS_TIPO_NACIONALIDADE_DISCENTE"] == "ESTRANGEIRO" else "BRASILEIRO"
             meses = inteiro(r["QT_MES_TITULACAO"])
-            a = cubo_a[(ano, ies, reg, jur, r["NM_GRANDE_AREA_CONHECIMENTO"], grau, sit, ing)]
+            ga = r["NM_GRANDE_AREA_CONHECIMENTO"]
+            a = cubo_a[(ano, ies, reg, jur, ga, grau, sit, ing, "")]
             a[0] += 1
             a[1] += meses
-            cubo_b[(ano, ie, reg, jur, r["DS_FAIXA_ETARIA"], nac, grau, sit, ing)] += 1
+            cubo_b[(ano, ie, reg, jur, r["DS_FAIXA_ETARIA"], nac, grau, sit, ing, "")] += 1
+            if copia:
+                a = cubo_a[(ano, *REDE_UFSCAR, ga, grau, sit, ing, "S")]
+                a[0] += 1
+                a[1] += meses
+                cubo_b[(ano, UFSCAR, REDE_UFSCAR[1], REDE_UFSCAR[2], r["DS_FAIXA_ETARIA"], nac, grau, sit, ing, "S")] += 1
             if alvo:
                 s = serie[(ano, cod)]
                 if sit == "MATRICULADO":
@@ -203,8 +217,12 @@ def agregar_pessoas(base, url, codigos):
             bolsa = "N" if r["CD_CAT_BOLSA_PRODUTIVIDADE"] in ("NA", "") else "S"
             ext = "S" if r["NM_PAIS_IES_TITULACAO"] not in ("BRASIL", "") else "N"
             nac = "ESTRANGEIRO" if r["DS_TIPO_NACIONALIDADE_DOCENTE"] == "ESTRANGEIRO" else "BRASILEIRO"
-            cubo_a[(ano, ies, reg, jur, r["NM_GRANDE_AREA_CONHECIMENTO"], cat, r["DS_REGIME_TRABALHO"], dr)][0] += 1
-            cubo_b[(ano, ie, reg, jur, cat, r["DS_FAIXA_ETARIA"], nac, bolsa, ext)] += 1
+            ga, grau_p, reg_t = r["NM_GRANDE_AREA_CONHECIMENTO"], r["NM_GRAU_PROGRAMA"], r["DS_REGIME_TRABALHO"]
+            cubo_a[(ano, ies, reg, jur, ga, grau_p, cat, reg_t, dr, "")][0] += 1
+            cubo_b[(ano, ie, reg, jur, cat, r["DS_FAIXA_ETARIA"], nac, bolsa, ext, "")] += 1
+            if copia:
+                cubo_a[(ano, *REDE_UFSCAR, ga, grau_p, cat, reg_t, dr, "S")][0] += 1
+                cubo_b[(ano, UFSCAR, REDE_UFSCAR[1], REDE_UFSCAR[2], cat, r["DS_FAIXA_ETARIA"], nac, bolsa, ext, "S")] += 1
             if alvo:
                 s = serie[(ano, cod)]
                 s["doc"] += 1
@@ -222,7 +240,7 @@ def agregar_pessoas(base, url, codigos):
 def tarefa(args):
     base, r, codigos = args
     h = hashlib.md5(",".join(sorted(codigos)).encode()).hexdigest()[:8] if base != "prog" else "x"
-    f = CACHE / f"v2_{base}_{r['id']}_{h}.json"
+    f = CACHE / f"v3_{base}_{r['id']}_{h}.json"
     if f.exists() and not REFRESH:
         return json.loads(f.read_text(encoding="utf-8"))
     t = time.time()

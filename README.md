@@ -50,3 +50,7 @@ a publicação em domínio institucional deve ser autorizada pelas pró-reitoria
 e confere se o endereço responde, gravando `site/data/ppg_sites.json`. Ao clicar no título/caixa do programa, o painel abre o site;
 o botão "Trajetória" abre o histórico. Programa sem site próprio aponta para a página geral de programas da ProPG.
 Se surgir um programa novo, acrescente o código em `SITES` e rode o script.
+
+## Programas em rede e níveis
+- Os 4 programas em rede em que a UFSCar é associada (PROFMAT, PROFIS, PROEF, PROF-FILO) entram nos totais da UFSCar por padrão (caixa no filtro). No ETL, cada programa gera linhas copiadas com `rede = "S"` (ies/ie = UFSCAR); Sudeste e Brasil ignoram essas cópias. Os números são os da rede inteira.
+- A aba "Por nível" separa mestrado/doutorado acadêmico e profissional; o filtro "Nível" aceita cada um isoladamente.

@@ -38,6 +38,7 @@
     <button data-tab="discentes">Discentes</button>
     <button data-tab="docentes">Docentes</button>
     <button data-tab="programas">Programas</button>
+    <button data-tab="niveis">Por nível</button>
     <button data-tab="quadrienal">Quadrienal</button>
     <button data-tab="redes">Programas em rede</button>
     <button data-tab="ranking">Comparar IES</button>
@@ -52,9 +53,10 @@
       </label>
       <label>Grande área <select id="f-area"></select></label>
       <label>Nível <select id="f-grau">
-        <option value="">Todos</option><option value="MESTRADO">Mestrado (acad. e prof.)</option><option value="DOUTORADO">Doutorado (acad. e prof.)</option>
+        <option value="">Todos</option><option value="MESTRADO">Mestrado (acad. e prof.)</option><option value="DOUTORADO">Doutorado (acad. e prof.)</option><option value="ME">Mestrado acadêmico</option><option value="MP">Mestrado profissional</option><option value="DO">Doutorado acadêmico</option><option value="DP">Doutorado profissional</option>
       </select></label>
       <label class="chk"><input type="checkbox" id="f-sem"> Sem a UFSCar nas comparações</label>
+      <label class="chk"><input type="checkbox" id="f-rede" checked> Incluir os 4 programas em rede nos totais da UFSCar</label>
       <label class="ano">Ano de referência <b id="ano-txt"></b>
         <input type="range" id="f-ano" aria-label="Ano de referência">
       </label>
@@ -63,7 +65,7 @@
   </div>
 </div>
 
-<div class="wrap"><div id="status-banner" class="status" hidden></div></div>
+<div class="wrap"><div id="status-banner" class="status" hidden></div><div id="nota-rede" class="status ok" hidden></div></div>
 <main class="wrap" id="main">
   <div id="carregando" class="carregando">Carregando dados da CAPES…</div>
   <section class="tab" id="tab-geral" hidden></section>
@@ -71,6 +73,7 @@
   <section class="tab" id="tab-discentes" hidden></section>
   <section class="tab" id="tab-docentes" hidden></section>
   <section class="tab" id="tab-programas" hidden></section>
+  <section class="tab" id="tab-niveis" hidden></section>
   <section class="tab" id="tab-quadrienal" hidden></section>
   <section class="tab" id="tab-redes" hidden></section>
   <section class="tab" id="tab-ranking" hidden></section>
