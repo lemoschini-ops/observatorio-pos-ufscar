@@ -737,7 +737,7 @@ function iniciaFiltros() {
 (async function () {
   try { const t = localStorage.getItem("tema"); if (t) document.documentElement.dataset.theme = t; } catch { }
   try { await carregar(); } catch (e) { $("#carregando").textContent = "Não foi possível carregar os dados: " + e.message; return; }
-  $("#carregando").remove(); $("#gerado").textContent = D.meta.gerado_em; $("#faixa-anos").textContent = `${ANOS[0]}–${ANOS.at(-1)}`;
+  $("#carregando").remove(); $("#gerado").textContent = D.meta.gerado_em; const fa = $("#faixa-anos"); if (fa) fa.textContent = `${ANOS[0]}–${ANOS.at(-1)}`;
   iniciaFiltros(); statusPainel();
   const h = location.hash.slice(1); if (ABAS[h]) S.tab = h;
   render();
