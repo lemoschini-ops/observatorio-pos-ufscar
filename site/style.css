@@ -255,3 +255,25 @@ footer.rodape p{margin:.2rem 0}
 .tabela-wrap{max-height:70vh}
 .tabela-wrap table:not(.heat) tbody td:first-child{box-shadow:1px 0 0 var(--line)}
 @media (max-width:700px){.tabela-wrap table:not(.heat) td:first-child.t{min-width:150px;max-width:200px}}
+
+/* tabelas: sempre inteiras na largura da tela (as linhas quebram, sem rolagem lateral) */
+.tabela-wrap{overflow-x:hidden}
+.tabela-wrap table{width:100%;table-layout:auto}
+.tabela-wrap table:not(.heat) th,.tabela-wrap table:not(.heat) td{padding:.45rem .5rem}
+.tabela-wrap table:not(.heat) th{font-size:.66rem;letter-spacing:.04em;overflow-wrap:break-word}
+.tabela-wrap table:not(.heat) td.t{min-width:64px;max-width:none;overflow-wrap:break-word;word-break:normal}
+.tabela-wrap table:not(.heat) td:first-child.t{min-width:140px;max-width:none;overflow-wrap:break-word}
+.tabela-wrap table:not(.heat) td:not(.t){white-space:normal}
+.tabela-wrap table:not(.heat) tbody td:first-child,.tabela-wrap table:not(.heat) thead th:first-child{position:static;box-shadow:none}
+.heat td:first-child{min-width:150px;max-width:none;white-space:normal;position:static}
+.heat td{min-width:0;padding:.15rem .1rem}.heat th{padding:.3rem .1rem;font-size:.64rem}
+.tabela-wrap table td .hc{min-width:0;padding:.05rem .3rem}
+.tabela-wrap{overflow-x:auto}   /* rede de segurança: nada fica escondido se a tela for muito estreita */
+@media (max-width:900px){
+  .tabela-wrap table:not(.heat){font-size:.78rem}
+  .tabela-wrap table:not(.heat) th,.tabela-wrap table:not(.heat) td{padding:.35rem .3rem}
+  .tabela-wrap table:not(.heat) th{font-size:.6rem;letter-spacing:0}
+  .tabela-wrap table:not(.heat) td:first-child.t{min-width:110px}
+  .tabela-wrap table:not(.heat) td.t{min-width:52px}
+  .tabela-wrap table .d,.tabela-wrap table .hc{font-size:.74rem}
+}

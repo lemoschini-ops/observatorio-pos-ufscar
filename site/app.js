@@ -634,9 +634,9 @@ ABAS.quadrienal = el => {
   tabela($("#q-assoc"), tAssoc, assoc.map(r => L(r, x => cap(x.nome), x => cap(x.area), "nivel", "assoc", x => isNum(x.ant) ? +x.ant : x.ant === "A" ? "A" : null, "nota")), { ordem: 0, aoClicar: abre });
   tabela($("#q-rede"), tRede, rede.map(r => L(r, x => cap(x.nome), "ies", "assoc", x => isNum(x.ant) ? +x.ant : x.ant === "A" ? "A" : null, "nota")), { ordem: 0, aoClicar: abre });
   const tCons = [{ h: "Programa", t: 1 }, { h: "Área de avaliação", t: 1 }, { h: "Grande área", t: 1 }, { h: "Nível", t: 1 }, { h: "Município", t: 1 }, { h: "Vínculo", t: 1 }, { h: "Nota anterior", f: fant }, { h: "Nota 2025", f: fnota },
-    { h: "Variação", f: v => v == null ? "–" : `<span class="d ${v > 0 ? "up" : v < 0 ? "dn" : ""}">${v > 0 ? "▲ +" : v < 0 ? "▼ " : "= "}${v}</span>` }, { h: "Observações", t: 1 }];
+    { h: "Variação", f: v => v == null ? "–" : `<span class="d ${v > 0 ? "up" : v < 0 ? "dn" : ""}">${v > 0 ? "▲ +" : v < 0 ? "▼ " : "= "}${v}</span>` }];
   const linhas = x.map(r => L(r, y => cap(y.nome), y => cap(y.area), y => cap(y.ga), "nivel", y => campusDe(y.mun), y => ({ Sede: "Sede", "Associação": "Associação", Rede: "Rede" }[y.vinc]),
-    y => isNum(y.ant) ? +y.ant : y.ant === "A" ? "A" : null, "nota", y => dl(y), y => (y.n2 != null ? "Nota reconsiderada. " : "") + (y.desat ? "Recomendada a desativação do doutorado." : "") + (y.nota == null ? "Sem resultado publicado na planilha da CAPES." : "")));
+    y => isNum(y.ant) ? +y.ant : y.ant === "A" ? "A" : null, "nota", y => dl(y)));
   tabela($("#q-tab"), tCons, linhas, { ordem: 7, desc: true, aoClicar: abre });
   $("#q-csv").onclick = () => baixar("avaliacao_quadrienal_ufscar.csv", csv([["codigo", "programa", "area_avaliacao", "grande_area", "nivel", "municipio", "vinculo", "conceito_anterior", "nota_quadrienal_2025"],
     ...x.map(r => [r.cod, r.nome, r.area, r.ga, r.nivel, r.mun, VINC[r.vinc], r.ant, r.nota ?? ""])]));
