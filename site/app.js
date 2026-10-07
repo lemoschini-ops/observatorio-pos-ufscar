@@ -14,7 +14,7 @@ const PEQ = new Set(["e", "da", "de", "do", "das", "dos", "em", "na", "no", "par
 const cap = s => (s || "").toLowerCase().replace(/(^|[\s/(-])(\S)(\S*)/g, (m, p, a, r) => PEQ.has(a + r) && p === " " ? m : p + a.toUpperCase() + r);
 
 const D = {}, Y = {}; let ANOS = [];
-const S = { tab: "geral", univ: "fed", area: "", grau: "", sem: false, ano: 0, a0: 0, a1: 0,
+const S = { rotulos: true, tab: "geral", univ: "fed", area: "", grau: "", sem: false, ano: 0, a0: 0, a1: 0,
   metric: "mat", modo: "idx", off: new Set(), sel: [U], rkMetric: "mat", rkModo: "abs",
   busca: "", conc: "", mun: "", vinc: "", ord: "nota", grp: "", incRede: true, nvInd: "mat", nvGrupo: 0, nvNivel: "ME" };
 const charts = {};
@@ -115,6 +115,41 @@ const aviso = k => {
 
 // ------------------------------------------------------------------ gráficos
 function destruir() { Object.values(charts).forEach(c => c.destroy()); for (const k in charts) delete charts[k]; }
+
+// ------------------------------------------------------------ rótulos de dados
+if (window.ChartDataLabels) { Chart.register(ChartDataLabels); Chart.defaults.set("plugins.datalabels", { display: false }); }
+const lum = c => {
+  const m = String(c).match(/^#?([0-9a-f]{6})$/i); let r, g, b;
+  if (m) { const n = parseInt(m[1], 16); r = n >> 16 & 255; g = n >> 8 & 255; b = n & 255; }
+  else { [r, g, b] = (String(c).match(/\d+/g) || [0, 0, 0]).map(Number); }
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+};
+const sobre = c => lum(c) > 0.6 ? "#1d3557" : "#ffffff";   // texto legível sobre a cor da barra
+function rotulos(tipo, labels, datasets, o, dec, suf) {
+  if (!S.rotulos || o.rotulos === false || !window.ChartDataLabels) return { display: false };
+  const fv = v => v == null || Number.isNaN(+v) ? "" : fmt(+v, dec) + suf;
+  const base = { formatter: v => fv(v && typeof v === "object" ? (v.y ?? v.x) : v), font: { size: 10, weight: 700 }, clamp: true };
+  const nl = labels.length, nd = datasets.length, tit = cssVar("--tit"), card = cssVar("--card");
+  if (tipo === "line") {
+    return { ...base, color: tit, backgroundColor: card, borderRadius: 4, padding: 2, borderWidth: 1, borderColor: ctx => ctx.dataset.borderColor, align: "top", offset: 4,
+      display: ctx => {
+        const d = ctx.dataset.data; if (d[ctx.dataIndex] == null) return false;
+        if (nl <= 6) return true;
+        let last = d.length - 1; while (last > 0 && d[last] == null) last--;
+        return ctx.dataIndex === last;                       // séries longas: só o último ponto
+      } };
+  }
+  if (tipo === "doughnut") return { ...base, color: ctx => sobre(ctx.dataset.backgroundColor[ctx.dataIndex]), formatter: v => fmt(v, 0), display: ctx => ctx.dataset.data[ctx.dataIndex] > 0 };
+  const dens = nl * nd;
+  if (o.stacked) {
+    const tot = Math.max(...labels.map((_, i) => datasets.reduce((s, d) => s + (+d.data[i] || 0), 0)), 1);
+    return { ...base, color: ctx => sobre(ctx.dataset.backgroundColor), anchor: "center", align: "center",
+      display: ctx => { const v = +ctx.dataset.data[ctx.dataIndex]; return dens <= 40 && v > 0 && v >= tot * 0.07; } };
+  }
+  return { ...base, color: tit, anchor: "end", align: "end", offset: 2, rotation: !o.horizontal && dens > 18 ? -90 : 0,
+    display: ctx => dens <= 60 && ctx.dataset.data[ctx.dataIndex] != null };
+}
+
 function grafico(id, tipo, labels, datasets, o = {}) {
   const el = document.getElementById(id); if (!el) return;
   Chart.defaults.font.family = '"Open Sans", Roboto, Arial, sans-serif';
@@ -124,9 +159,11 @@ function grafico(id, tipo, labels, datasets, o = {}) {
     type: tipo, data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false, indexAxis: horiz ? "y" : "x",
+      layout: { padding: tipo === "doughnut" ? 0 : { top: 22, right: horiz ? 34 : 14 } },
       interaction: { mode: horiz ? "nearest" : "index", intersect: false },
       plugins: {
         legend: { display: !!o.legend, labels: { color: mut, usePointStyle: true, boxWidth: 8 } },
+        datalabels: rotulos(tipo, labels, datasets, o, dec, suf),
         tooltip: { callbacks: { label: x => `${x.dataset.label}: ${fmt(typeof x.parsed === 'number' ? x.parsed : horiz ? x.parsed.x : x.parsed.y, dec)}${suf}` } },
       },
       scales: {
@@ -207,11 +244,7 @@ ABAS.geral = el => {
     `Na Quadrienal (resultado de 05/2026), <b>${fmt(qs(0).c57, 1)}%</b> dos programas da UFSCar ficaram com nota 5 a 7 (Sudeste ${fmt(qs(1).c57, 1)}%, Brasil ${fmt(qs(2).c57, 1)}%).`,
     `São <b>${fmt(val("razao", gu, a), 1)}</b> discentes por docente permanente na UFSCar (Sudeste ${fmt(val("razao", gs, a), 1)}, Brasil ${fmt(val("razao", gb, a), 1)}), e o tempo médio de titulação é de <b>${fmt(val("meses", gu, a), 1)} meses</b>.`,
   ];
-  el.innerHTML = `<section class="hero"><div class="hero-text"><span class="tag-hero">Dados abertos CAPES · ${ANOS[0]}–${ANOS.at(-1)}</span>
-      <h1>Panorama da pós-graduação stricto sensu da UFSCar em ${a}</h1>
-      <p>Programas, discentes, docentes e conceitos comparados com o Sudeste e o Brasil.</p></div>
-      <div class="hero-stat"><b>${fmt(val("mat", gu, a))}</b><span>discentes matriculados em ${a}</span></div></section>
-    <h2 class="sec">Acesso rápido</h2>
+  el.innerHTML = `<h2 class="sec">Acesso rápido</h2>
     <div class="quick">${[["serie", "Série histórica"], ["programas", "Programas e conceitos"], ["niveis", "Indicadores por nível"], ["quadrienal", "Avaliação Quadrienal"], ["redes", "Programas em rede"], ["ranking", "Comparar IES"]].map(([t, n]) => `<button data-t="${t}">${n}</button>`).join("")}</div>
     <h2 class="sec">Indicadores de ${a}</h2><p class="sub">Clique em um indicador para abrir a série histórica. A variação (▲▼) compara com ${ant ?? "–"}.</p>
     <div class="kpis">${cards}</div>
@@ -471,7 +504,7 @@ function abrirPrograma(cod) {
   const serie = (k, nome, cor) => linha(nome, cor, ANOS.map(a => v(a, k)));
   destruirModal();
   charts["m-g"] = new Chart($("#m-g"), { type: "line", data: { labels: ANOS.map(String), datasets: [serie("mat", "Matriculados", cssVar("--c-u")), serie("tit", "Titulados", "#2da44e"), serie("perm", "Docentes permanentes", cssVar("--c-se")), serie("ing", "Ingressantes", "#e8a317")] },
-    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, plugins: { legend: { labels: { color: cssVar("--mut"), usePointStyle: true, boxWidth: 8 } } }, scales: { x: { ticks: { color: cssVar("--mut") }, grid: { color: cssVar("--line") } }, y: { beginAtZero: true, ticks: { color: cssVar("--mut") }, grid: { color: cssVar("--line") } } } } });
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, layout: { padding: { top: 22, right: 14 } }, plugins: { legend: { labels: { color: cssVar("--mut"), usePointStyle: true, boxWidth: 8 } }, datalabels: S.rotulos && window.ChartDataLabels ? { color: cssVar("--tit"), backgroundColor: cssVar("--card"), borderRadius: 4, padding: 2, borderWidth: 1, borderColor: c => c.dataset.borderColor, font: { size: 10, weight: 700 }, align: "top", offset: 4, formatter: v => fmt(v), display: c => { const d = c.dataset.data; let l = d.length - 1; while (l > 0 && d[l] == null) l--; return d[c.dataIndex] != null && c.dataIndex === l; } } : { display: false } }, scales: { x: { ticks: { color: cssVar("--mut") }, grid: { color: cssVar("--line") } }, y: { beginAtZero: true, ticks: { color: cssVar("--mut") }, grid: { color: cssVar("--line") } } } } });
 }
 function destruirModal() { charts["m-g"]?.destroy(); delete charts["m-g"]; }
 
@@ -723,6 +756,9 @@ function iniciaFiltros() {
   $("#f-grau").onchange = e => { S.grau = e.target.value; render(); };
   $("#f-sem").onchange = e => { S.sem = e.target.checked; render(); };
   $("#f-rede").onchange = e => { S.incRede = e.target.checked; render(); };
+  try { S.rotulos = localStorage.getItem("rotulos") !== "0"; } catch { }
+  $("#f-rotulos").checked = S.rotulos;
+  $("#f-rotulos").onchange = e => { S.rotulos = e.target.checked; try { localStorage.setItem("rotulos", S.rotulos ? "1" : "0"); } catch { } render(); };
   $$("#f-univ button").forEach(b => b.onclick = () => { S.univ = b.dataset.v; $$("#f-univ button").forEach(x => x.classList.toggle("on", x === b)); render(); });
   $("#limpar").onclick = () => { Object.assign(S, { univ: "fed", area: "", grau: "", sem: false, ano: ANOS.at(-1), a0: ANOS[0], a1: ANOS.at(-1), busca: "", conc: "", mun: "", vinc: "", ord: "nota", grp: "", incRede: true }); $("#f-rede").checked = true; $("#f-area").value = ""; $("#f-grau").value = ""; $("#f-sem").checked = false; $("#f-ano").value = S.ano; $$("#f-univ button").forEach(x => x.classList.toggle("on", x.dataset.v === "fed")); render(); };
   $$("#abas button").forEach(b => b.onclick = () => ir(b.dataset.tab));
