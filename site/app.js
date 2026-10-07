@@ -9,6 +9,7 @@ const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(
 const fmt = (v, d = 0) => v == null || Number.isNaN(v) ? "–" : v.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
 const sum = (rs, f = "n") => rs.reduce((s, r) => s + (r[f] || 0), 0);
 const pct = (a, b) => b ? 100 * a / b : null;
+const sa = s => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const PEQ = new Set(["e", "da", "de", "do", "das", "dos", "em", "na", "no", "para"]);
 const cap = s => (s || "").toLowerCase().replace(/(^|[\s/(-])(\S)(\S*)/g, (m, p, a, r) => PEQ.has(a + r) && p === " " ? m : p + a.toUpperCase() + r);
@@ -16,7 +17,7 @@ const cap = s => (s || "").toLowerCase().replace(/(^|[\s/(-])(\S)(\S*)/g, (m, p,
 const D = {}, Y = {}; let ANOS = [];
 const S = { rotulos: true, tab: "geral", univ: "fed", area: "", grau: "", sem: false, ano: 0, a0: 0, a1: 0,
   metric: "mat", modo: "idx", off: new Set(), sel: [U], rkMetric: "mat", rkModo: "abs",
-  busca: "", conc: "", mun: "", vinc: "", ord: "nota", grp: "", incRede: true, nvInd: "mat", nvGrupo: 0, nvNivel: "ME" };
+  busca: "", conc: "", mun: "", vinc: "", ord: "nota", grp: "", incRede: true, nvInd: "mat", nvGrupo: 0, nvNivel: "ME", qvin: "", qnota: "", lato: { sit: "Ativo", mod: "", area: "", camp: "", q: "" } };
 const charts = {};
 let memo = new Map();
 
@@ -30,6 +31,7 @@ async function carregar() {
   Object.assign(D, { meta, ies, serie, prog });
   D.status = await fetch("data/status.json", { cache: "no-store" }).then(r => r.ok ? r.json() : null).catch(() => null);
   D.sites = await fetch("data/ppg_sites.json").then(r => r.ok ? r.json() : null).catch(() => null);
+  D.lato = await fetch("data/lato_sensu.json").then(r => r.ok ? r.json() : null).catch(() => null);
   D.qinfo = q; D.q = q.rows.map(r => Object.fromEntries(q.cols.map((c, i) => [c, r[i]]))); D.redeAssoc = new Set(prog.filter(p => p.rede && p.papel === "associada").map(p => p.cod));
   D.q.forEach(r => r.redeU = D.redeAssoc.has(r.cod)); D.qmap = Object.fromEntries(D.q.map(r => [r.cod, r]));
   ANOS = meta.anos; S.ano = S.a1 = ANOS.at(-1); S.a0 = ANOS[0];
@@ -245,7 +247,7 @@ ABAS.geral = el => {
     `São <b>${fmt(val("razao", gu, a), 1)}</b> discentes por docente permanente na UFSCar (Sudeste ${fmt(val("razao", gs, a), 1)}, Brasil ${fmt(val("razao", gb, a), 1)}), e o tempo médio de titulação é de <b>${fmt(val("meses", gu, a), 1)} meses</b>.`,
   ];
   el.innerHTML = `<h2 class="sec">Acesso rápido</h2>
-    <div class="quick">${[["serie", "Série histórica"], ["programas", "Programas e conceitos"], ["niveis", "Indicadores por nível"], ["quadrienal", "Avaliação Quadrienal"], ["redes", "Programas em rede"], ["ranking", "Comparar IES"]].map(([t, n]) => `<button data-t="${t}">${n}</button>`).join("")}</div>
+    <div class="quick">${[["serie", "Série histórica"], ["programas", "Programas e conceitos"], ["niveis", "Indicadores por nível"], ["quadrienal", "Avaliação Quadrienal"], ["redes", "Programas em rede"], ["lato", "Pós-Graduação Lato sensu"], ["ranking", "Comparar IES"]].map(([t, n]) => `<button data-t="${t}">${n}</button>`).join("")}</div>
     <h2 class="sec">Indicadores de ${a}</h2><p class="sub">Clique em um indicador para abrir a série histórica. A variação (▲▼) compara com ${ant ?? "–"}.</p>
     <div class="kpis">${cards}</div>
     <div class="insights"><ul>${ins.map(i => `<li>${i}</li>`).join("")}</ul></div>
@@ -508,7 +510,7 @@ function abrirPrograma(cod) {
 }
 function destruirModal() { charts["m-g"]?.destroy(); delete charts["m-g"]; }
 
-// ---------- Quadrienal ----------
+// ---------- Avaliação Quadrienal (resultado + painel de pós-graduação) ----------
 function qRows(g, { area = true, grau = true } = {}) {
   return D.q.filter(r => g.t(r) && !(area && S.area && r.ga !== S.area) && !(grau && S.grau && !nivelOk(r.grau, S.grau)));
 }
@@ -516,41 +518,173 @@ function qStats(rs) {
   const cmp = rs.filter(r => /^[1-7]$/.test(r.ant)), n = rs.length;
   const sobe = cmp.filter(r => r.nota > +r.ant).length, cai = cmp.filter(r => r.nota < +r.ant).length;
   return { n, c57: pct(rs.filter(r => r.nota >= 5).length, n), c67: pct(rs.filter(r => r.nota >= 6).length, n),
+    media: mediaN(rs.map(r => r.nota)),
     cmp: cmp.length, sobe, cai, igual: cmp.length - sobe - cai,
     ant57: pct(cmp.filter(r => +r.ant >= 5).length, cmp.length) };
 }
+const mediana = v => { const s = v.filter(x => x != null).sort((p, q) => p - q), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; };
+const mediaN = v => { const a = v.filter(x => x != null && !Number.isNaN(+x)); return a.length ? a.reduce((s, x) => s + +x, 0) / a.length : null; };
+const NIVEL_SIGLA = { "MESTRADO": "ME", "DOUTORADO": "DO", "MESTRADO PROFISSIONAL": "MP", "DOUTORADO PROFISSIONAL": "DP" };
+const VINC = { Sede: "Sede na UFSCar", "Associação": "Em associação (UFSCar coordena)", Rede: "Em rede (UFSCar associada)" };
+const isNum = a => /^[1-7]$/.test(a);
+
+// programas da UFSCar no ano mais recente, com a nota da Quadrienal quando existe (inclui os sem resultado publicado)
+function programasQuadrienal() {
+  const ult = ANOS.at(-1), out = [];
+  Object.values(programas()).forEach(p => {
+    const m = p.anos[ult]; if (!m) return;
+    const rede = m.papel !== "sede";
+    if (rede && !S.incRede) return;
+    const q = D.qmap[p.cod];
+    const vinc = rede ? "Rede" : (m.rede ? "Associação" : "Sede");
+    out.push({
+      cod: p.cod, nome: m.nome, area: q?.area || m.area, ga: q?.ga || m.ga, grau: m.grau, mun: m.mun, ies: m.ies, vinc,
+      nivel: q?.nivel || m.grau.split("/").map(t => NIVEL_SIGLA[t.trim()] || t).join("/"),
+      ant: q?.ant ?? m.conc, nota: q?.nota ?? null, n2: q?.n2 ?? null, desat: !!q?.desat, assoc: (m.associadas || []).filter(s => s !== "UFSCAR"),
+    });
+  });
+  return out;
+}
 ABAS.quadrienal = el => {
   const rs = GRUPOS.map(g => qRows(g)), st = rs.map(qStats);
+  const todos = programasQuadrienal().filter(r => (!S.area || r.ga === S.area) && (!S.grau || nivelOk(r.grau, S.grau)));
+  const x = todos.filter(r => (!S.qvin || r.vinc === S.qvin) && (!S.qnota || (S.qnota === "sem" ? r.nota == null : r.nota === +S.qnota)));
+  const comN = x.filter(r => r.nota != null), dl = r => r.nota != null && isNum(r.ant) ? r.nota - +r.ant : null;
+  const rede = x.filter(r => r.vinc === "Rede"), assoc = x.filter(r => r.vinc === "Associação");
   const kp = (t, f, sub) => `<div class="kpi" style="cursor:default"><h3>${t}</h3><div class="v">${f(st[0])}</div>${sub ? `<p class="sub" style="margin:0">${sub(st[0])}</p>` : ""}<ul>${[1, 2].map(i => `<li><span><i class="dot" style="background:${cssVar(GRUPOS[i].cor)}"></i>${i === 1 ? "Sudeste" : "Brasil"}</span><b>${f(st[i])}</b></li>`).join("")}</ul></div>`;
-  const num = r => /^[1-7]$/.test(r.ant);
-  const lin = rs[0].map(r => ({ id: r.cod, v: [cap(r.nome), cap(r.area), r.nivel, num(r) ? +r.ant : (r.ant === "A" ? "A" : null), r.nota, num(r) ? r.nota - +r.ant : null, (r.n2 != null ? "Nota reconsiderada. " : "") + (r.desat ? "Recomendada a desativação do doutorado." : "")] }));
+  const k1 = (t, v, sub) => `<div class="kpi" style="cursor:default"><h3>${t}</h3><div class="v">${v}</div>${sub ? `<p class="sub" style="margin:0">${sub}</p>` : ""}</div>`;
+  const nm = v => v == null ? "–" : fmt(v, 2);
+  const subiu = x.filter(r => dl(r) > 0).length, igual = x.filter(r => dl(r) === 0).length, caiu = x.filter(r => dl(r) < 0).length;
+  const nota5 = comN.filter(r => r.nota >= 5).length;
   el.innerHTML = `<h2 class="sec">Avaliação Quadrienal: resultado de 2025</h2>
-    <p class="sub">Ciclo avaliado 2021–2024, oficialmente “Quadrienal 2025”; resultado publicado pela CAPES em ${esc(D.qinfo.publicado.split("-").reverse().join("/"))}. <a href="${esc(D.qinfo.pagina)}" target="_blank" rel="noopener">Fonte oficial</a>. ${esc(D.qinfo.obs)}</p>
+    <p class="sub">Ciclo avaliado 2021–2024, oficialmente “Quadrienal 2025”; resultado publicado pela CAPES em ${esc(D.qinfo.publicado.split("-").reverse().join("/"))}. <a href="${esc(D.qinfo.pagina)}" target="_blank" rel="noopener">Fonte oficial</a>. ${esc(D.qinfo.obs)} Programas <b>em associação</b> (coordenados pela UFSCar com outra instituição) e <b>em rede</b> (coordenados em outra instituição, UFSCar associada) aparecem separados; neles a nota é a do programa como um todo e a planilha lista só a instituição coordenadora.</p>
+    <div class="controles">
+      <label>Vínculo<select id="q-vin"><option value="">Todos</option>${Object.entries(VINC).map(([k, t]) => `<option value="${k}" ${S.qvin === k ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+      <label>Nota 2025<select id="q-nota"><option value="">Todas</option>${[3, 4, 5, 6, 7].map(n => `<option value="${n}" ${S.qnota === String(n) ? "selected" : ""}>${n}</option>`).join("")}<option value="sem" ${S.qnota === "sem" ? "selected" : ""}>Sem resultado publicado</option></select></label>
+      <span class="sub" style="margin:0">Também valem os filtros de grande área e nível da barra superior.</span>
+    </div>
+    <h2 class="sec">Programas da UFSCar na seleção</h2>
     <div class="kpis">
-      ${kp("Programas avaliados", s => fmt(s.n))}
+      ${k1("Programas na seleção", fmt(x.length), `${comN.length} com resultado publicado`)}
+      ${k1("Nota média (3 a 7)", nm(mediaN(comN.map(r => r.nota))), "recomendação final 2025")}
+      ${k1("Programas com nota 5 ou mais", comN.length ? fmt(pct(nota5, comN.length), 1) + "%" : "–", `${nota5} de ${comN.length}`)}
+      ${k1("Excelência (nota 6 ou 7)", fmt(comN.filter(r => r.nota >= 6).length), `${comN.filter(r => r.nota === 7).length} com nota 7`)}
+      ${k1("Subiram de nota", fmt(subiu), `${igual} mantiveram · ${caiu} caíram`)}
+      ${k1("Programas em associação", fmt(assoc.length), "UFSCar coordena com outra instituição")}
+      ${k1("Programas em rede", fmt(rede.length), "UFSCar como associada")}
+      ${k1("Programas com doutorado", fmt(x.filter(r => /DO|DP/.test(r.nivel || "")).length), "ME/DO, DO e DP")}
+      ${k1("Mestrado ou doutorado profissional", fmt(x.filter(r => /MP|DP/.test(r.nivel || "")).length), "MP e DP")}
+      ${k1("Fora de São Carlos", fmt(x.filter(r => r.vinc !== "Rede" && !/são carlos/i.test(r.mun || "")).length), "Sorocaba, Araras e Buri")}
+    </div>
+    <h2 class="sec">Comparação com o Sudeste e o Brasil</h2>
+    <p class="sub">${esc(GRUPOS[1].nome)} e ${esc(GRUPOS[2].nome)}; vale o filtro de universo da barra superior. Todos os programas com nota final.</p>
+    <div class="kpis">
+      ${kp("Nota média", s => nm(s.media), s => `${s.n} programas`)}
       ${kp("% com nota 5 a 7", s => fmt(s.c57, 1) + "%", s => `antes: ${fmt(s.ant57, 1)}% (entre os comparáveis)`)}
       ${kp("% com nota 6 ou 7", s => fmt(s.c67, 1) + "%")}
       ${kp("Subiram de nota", s => fmt(pct(s.sobe, s.cmp), 1) + "%", s => `${s.sobe} de ${s.cmp} programas`)}
       ${kp("Mantiveram", s => fmt(pct(s.igual, s.cmp), 1) + "%", s => `${s.igual} programas`)}
       ${kp("Caíram de nota", s => fmt(pct(s.cai, s.cmp), 1) + "%", s => `${s.cai} programas`)}
     </div>
-    <div class="grade" style="margin-top:14px">
+    <div class="grade" style="margin-top:1.1rem">
+      <article class="card"><h3>Programas por nota na Quadrienal 2025</h3><p class="sub">UFSCar, na seleção</p><div class="graf"><canvas id="q0"></canvas></div></article>
       <article class="card"><h3>Distribuição das notas</h3><p class="sub">% dos programas avaliados</p><div class="graf"><canvas id="q1"></canvas></div></article>
+      <article class="card"><h3>Notas dos programas da UFSCar ao longo dos ciclos</h3><p class="sub">Conceito vigente em cada ano-base (2013–2024) e resultado de 2025, programas com sede na UFSCar na seleção. “Novo” = sem nota ainda.</p><div class="graf"><canvas id="q4"></canvas></div></article>
       <article class="card"><h3>Mudança em relação ao conceito anterior</h3><p class="sub">% dos programas que já tinham conceito (exclui programas novos)</p><div class="graf"><canvas id="q2"></canvas></div></article>
-      <article class="card"><h3>UFSCar: conceito anterior x nota atual</h3><p class="sub">número de programas</p><div class="graf"><canvas id="q3"></canvas></div></article>
+      <article class="card"><h3>UFSCar: conceito anterior x nota atual</h3><p class="sub">número de programas, na seleção</p><div class="graf"><canvas id="q3"></canvas></div></article>
+      <article class="card"><h3>Nota média por grande área</h3><p class="sub">UFSCar, programas com nota na seleção</p><div class="graf"><canvas id="q5"></canvas></div></article>
     </div>
-    <h2 class="sec">Programas da UFSCar (${lin.length})</h2>
-    <p class="sub">“Conceito anterior” é o conceito do programa na base de Programas 2024, anterior a este resultado. Clique em um programa para ver a trajetória.</p>
-    <div class="acoes" style="margin:0 0 8px"><button class="btn" id="q-csv">Baixar CSV</button></div>
+    <h2 class="sec">Programas em associação (${assoc.length})</h2>
+    <p class="sub">Coordenados pela UFSCar em associação com outra instituição de ensino.</p>
+    <div class="tabela-wrap"><table id="q-assoc"></table></div>
+    <h2 class="sec">Programas em rede (${rede.length})</h2>
+    <p class="sub">Coordenados em outra instituição, com a UFSCar como associada. A nota é a da rede.</p>
+    <div class="tabela-wrap"><table id="q-rede"></table></div>
+    <h2 class="sec">Consulta de programas de pós-graduação (${x.length})</h2>
+    <p class="sub">Clique em um programa para ver a trajetória. “Conceito anterior” é o da base de Programas 2024, anterior a este resultado.</p>
+    <div class="acoes" style="margin:0 0 .6rem"><button class="btn" id="q-csv">Baixar CSV</button></div>
     <div class="tabela-wrap"><table id="q-tab"></table></div>`;
+
+  $("#q-vin").onchange = e => { S.qvin = e.target.value; render(); };
+  $("#q-nota").onchange = e => { S.qnota = e.target.value; render(); };
+
+  // gráficos
   const cats = [["1 e 2", r => r.nota <= 2], ["Nota 3", r => r.nota === 3], ["Nota 4", r => r.nota === 4], ["Nota 5", r => r.nota === 5], ["Nota 6", r => r.nota === 6], ["Nota 7", r => r.nota === 7]];
+  grafico("q0", "bar", [3, 4, 5, 6, 7].map(n => "Nota " + n), [barra("Programas", cssVar("--c-br"), [3, 4, 5, 6, 7].map(n => comN.filter(r => r.nota === n).length))], { dec: 0 });
   grafico("q1", "bar", cats.map(c => c[0]), GRUPOS.map((g, i) => barra(g.nome, cssVar(g.cor), cats.map(c => pct(rs[i].filter(c[1]).length, rs[i].length)))), { suf: "%", legend: true });
   grafico("q2", "bar", GRUPOS.map(g => g.nome), [["Subiram", st.map(s => pct(s.sobe, s.cmp)), "#2da44e"], ["Mantiveram", st.map(s => pct(s.igual, s.cmp)), "#94a3b8"], ["Caíram", st.map(s => pct(s.cai, s.cmp)), "#d64545"]].map(([n, d, c]) => barra(n, c, d)), { stacked: true, suf: "%", legend: true, horizontal: true });
-  const cmpU = rs[0].filter(num), ns = [3, 4, 5, 6, 7];
-  grafico("q3", "bar", ns.map(c => "Nota " + c), [barra("Conceito anterior", cssVar("--c-br"), ns.map(c => cmpU.filter(r => +r.ant === c).length)), barra("Quadrienal 2025", cssVar("--c-u"), ns.map(c => rs[0].filter(r => r.nota === c).length))], { dec: 0, legend: true });
-  tabela($("#q-tab"), [{ h: "Programa", t: 1 }, { h: "Área de avaliação", t: 1 }, { h: "Nível", t: 1 }, { h: "Conceito anterior", f: v => v == null ? "–" : hc(String(v)) }, { h: "Nota 2025", f: v => hc(String(v)) },
-    { h: "Variação", f: v => v == null ? "–" : `<span class="d ${v > 0 ? "up" : v < 0 ? "dn" : ""}">${v > 0 ? "▲ +" : v < 0 ? "▼ " : "= "}${v}</span>` }, { h: "Observações", t: 1 }], lin, { ordem: 4, desc: true, aoClicar: c => programas()[c] && abrirPrograma(c) });
-  $("#q-csv").onclick = () => baixar("quadrienal_ufscar.csv", csv([["codigo", "programa", "area_avaliacao", "nivel", "conceito_anterior", "nota_quadrienal_2025"], ...rs[0].map(r => [r.cod, r.nome, r.area, r.nivel, r.ant, r.nota])]));
+  const cmpU = x.filter(r => isNum(r.ant)), ns = [3, 4, 5, 6, 7];
+  grafico("q3", "bar", ns.map(c => "Nota " + c), [barra("Conceito anterior", cssVar("--c-br"), ns.map(c => cmpU.filter(r => +r.ant === c).length)), barra("Quadrienal 2025", cssVar("--c-u"), ns.map(c => x.filter(r => r.nota === c).length))], { dec: 0, legend: true });
+  // ciclos: conceito por ano-base (programas com sede na seleção) + nota 2025
+  const sedes = new Set(x.filter(r => r.vinc !== "Rede").map(r => r.cod)), anosC = [...ANOS.map(String), "2025"];
+  const cont = c => anosC.map(a => a === "2025" ? (c === "A" ? 0 : x.filter(r => r.vinc !== "Rede" && r.nota === +c).length)
+    : Object.values(programas()).filter(p => sedes.has(p.cod) && p.anos[+a] && String(p.anos[+a].conc) === String(c)).length);
+  grafico("q4", "bar", anosC, ["A", 2, 3, 4, 5, 6, 7].map(c => barra(c === "A" ? "Novo (sem nota)" : "Nota " + c, CORC[c] || "#94a3b8", cont(c))), { stacked: true, dec: 0, legend: true });
+  const porGa = Object.entries(comN.reduce((m, r) => ((m[r.ga] ??= []).push(r.nota), m), {})).map(([l, v]) => [cap(l), mediaN(v), v.length]).sort((a, b) => b[1] - a[1]);
+  grafico("q5", "bar", porGa.map(([l, , n]) => `${l} (${n})`), [barra("Nota média", cssVar("--c-se"), porGa.map(r => r[1]))], { dec: 2, horizontal: true });
+  charts.q5.options.scales.x.max = 7; charts.q5.options.scales.x.min = 0; charts.q5.update();
+
+  // tabelas
+  const instit = r => { const l = r.assoc; return l.length ? `${l.length}: ${esc(l.slice(0, 5).join(", "))}${l.length > 5 ? "…" : ""}` : "–"; };
+  const fnota = v => v == null ? "–" : hc(String(v)), fant = v => v == null ? "–" : hc(String(v));
+  const L = (r, ...cols) => ({ id: r.cod, v: cols.map(c => typeof c === "function" ? c(r) : r[c]), r });
+  const tAssoc = [{ h: "Programa", t: 1 }, { h: "Área de avaliação", t: 1 }, { h: "Nível", t: 1 }, { h: "Instituição associada", t: 1, f: (v, l) => instit(l.r) }, { h: "Nota anterior", f: fant }, { h: "Nota 2025", f: fnota }];
+  const tRede = [{ h: "Programa", t: 1 }, { h: "Coordenação", t: 1 }, { h: "Instituições da rede", t: 1, f: (v, l) => instit(l.r) }, { h: "Nota anterior", f: fant }, { h: "Nota 2025", f: fnota }];
+  const abre = c => programas()[c] && abrirPrograma(c);
+  tabela($("#q-assoc"), tAssoc, assoc.map(r => L(r, x => cap(x.nome), x => cap(x.area), "nivel", "assoc", x => isNum(x.ant) ? +x.ant : x.ant === "A" ? "A" : null, "nota")), { ordem: 0, aoClicar: abre });
+  tabela($("#q-rede"), tRede, rede.map(r => L(r, x => cap(x.nome), "ies", "assoc", x => isNum(x.ant) ? +x.ant : x.ant === "A" ? "A" : null, "nota")), { ordem: 0, aoClicar: abre });
+  const tCons = [{ h: "Programa", t: 1 }, { h: "Área de avaliação", t: 1 }, { h: "Grande área", t: 1 }, { h: "Nível", t: 1 }, { h: "Município", t: 1 }, { h: "Vínculo", t: 1 }, { h: "Nota anterior", f: fant }, { h: "Nota 2025", f: fnota },
+    { h: "Variação", f: v => v == null ? "–" : `<span class="d ${v > 0 ? "up" : v < 0 ? "dn" : ""}">${v > 0 ? "▲ +" : v < 0 ? "▼ " : "= "}${v}</span>` }, { h: "Observações", t: 1 }];
+  const linhas = x.map(r => L(r, y => cap(y.nome), y => cap(y.area), y => cap(y.ga), "nivel", y => campusDe(y.mun), y => ({ Sede: "Sede", "Associação": "Associação", Rede: "Rede" }[y.vinc]),
+    y => isNum(y.ant) ? +y.ant : y.ant === "A" ? "A" : null, "nota", y => dl(y), y => (y.n2 != null ? "Nota reconsiderada. " : "") + (y.desat ? "Recomendada a desativação do doutorado." : "") + (y.nota == null ? "Sem resultado publicado na planilha da CAPES." : "")));
+  tabela($("#q-tab"), tCons, linhas, { ordem: 7, desc: true, aoClicar: abre });
+  $("#q-csv").onclick = () => baixar("avaliacao_quadrienal_ufscar.csv", csv([["codigo", "programa", "area_avaliacao", "grande_area", "nivel", "municipio", "vinculo", "conceito_anterior", "nota_quadrienal_2025"],
+    ...x.map(r => [r.cod, r.nome, r.area, r.ga, r.nivel, r.mun, VINC[r.vinc], r.ant, r.nota ?? ""])]));
+};
+
+// ---------- Pós-Graduação Lato sensu (especialização, e-MEC) ----------
+ABAS.lato = el => {
+  const L = D.lato;
+  if (!L) { el.innerHTML = '<h2 class="sec">Pós-Graduação Lato sensu</h2><p class="sub">Dados do e-MEC indisponíveis no momento.</p>'; return; }
+  const E = L.cursos, uniqS = a => [...new Set(a)].filter(Boolean).sort((p, q) => String(p).localeCompare(String(q), "pt"));
+  const mods = uniqS(E.map(r => r.modalidade)), areas = uniqS(E.map(r => r.area)), campi = uniqS(E.map(r => r.campus));
+  const f = S.lato;
+  el.innerHTML = `<h2 class="sec">Pós-Graduação Lato sensu</h2>
+    <p class="sub">Cursos de <b>especialização</b> cadastrados no e-MEC pela UFSCar (retrato do cadastro em ${esc(L.coletado_em.split("-").reverse().join("/"))}). “Ativo” = curso em oferta; “Inativo” = curso ou turma não mais ofertado. Cada turma pode aparecer como um curso separado. Fonte: <a href="${esc(L.url)}" target="_blank" rel="noopener">e-MEC</a> (API Olinda do MEC). Os filtros de grande área, nível e universo da barra superior não se aplicam a esta aba.</p>
+    <div id="l0"></div>
+    <div class="grade">
+      <article class="card"><h3>Especializações por situação e modalidade</h3><p class="sub">todos os cursos cadastrados</p><div class="graf"><canvas id="l1"></canvas></div></article>
+      <article class="card"><h3>Especializações por área (OCDE/CINE)</h3><p class="sub">acompanha os filtros abaixo</p><div class="graf"><canvas id="l2"></canvas></div></article>
+      <article class="card"><h3>Cursos por município</h3><p class="sub">acompanha os filtros abaixo</p><div class="graf"><canvas id="l3"></canvas></div></article>
+      <article class="card"><h3>Cursos por faixa de carga horária</h3><p class="sub">acompanha os filtros abaixo</p><div class="graf"><canvas id="l4"></canvas></div></article>
+    </div>
+    <h2 class="sec">Consulta de cursos de especialização</h2>
+    <div class="controles">
+      <label>Situação<select id="l-sit">${[["", "Todas"], ["Ativo", "Ativo"], ["Inativo", "Inativo"]].map(([v, t]) => `<option value="${v}" ${f.sit === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+      <label>Modalidade<select id="l-mod"><option value="">Todas</option>${mods.map(m => `<option ${f.mod === m ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></label>
+      <label>Área<select id="l-area"><option value="">Todas</option>${areas.map(m => `<option value="${esc(m)}" ${f.area === m ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></label>
+      <label>Município<select id="l-camp"><option value="">Todos</option>${campi.map(m => `<option value="${esc(m)}" ${f.camp === m ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></label>
+      <label>Busca<input type="search" id="l-q" placeholder="nome do curso…" value="${esc(f.q)}"></label>
+      <button class="btn" id="l-csv">Baixar CSV</button>
+    </div>
+    <div class="tabela-wrap"><table id="l-tab"></table></div>`;
+
+  const x = E.filter(r => (!f.sit || r.sit === f.sit) && (!f.mod || r.modalidade === f.mod) && (!f.area || r.area === f.area) && (!f.camp || r.campus === f.camp) && (!f.q || sa(r.nome).includes(sa(f.q))));
+  const at = E.filter(r => r.sit === "Ativo"), kpi1 = (t, v, s) => `<div class="kpi" style="cursor:default"><h3>${t}</h3><div class="v">${v}</div>${s ? `<p class="sub" style="margin:0">${s}</p>` : ""}</div>`;
+  $("#l0").innerHTML = `<div class="kpis">${kpi1("Especializações cadastradas", fmt(E.length), `${uniqS(E.map(r => r.area)).length} áreas`)}${kpi1("Ativas", fmt(at.length), `${fmt(pct(at.length, E.length), 0)}% do total`)}${kpi1("Inativas", fmt(E.length - at.length))}${kpi1("Vagas (ativas)", fmt(sum(at, "vagas")))}${kpi1("Carga horária mediana (ativas)", fmt(mediana(at.map(r => r.ch)), 0), "horas, sem distorção das residências")}${kpi1("Residências (ativas)", fmt(at.filter(r => /resid[eê]ncia/i.test(r.nome)).length), "médicas e multiprofissionais (5.760 h ou mais)")}${kpi1("Cursos a distância (ativos)", fmt(at.filter(r => r.modalidade === "EAD").length), `${fmt(at.filter(r => r.modalidade !== "EAD").length)} presenciais`)}</div>`;
+  grafico("l1", "bar", mods, ["Ativo", "Inativo"].map((s, i) => barra(s, i ? cssVar("--c-br") : cssVar("--c-se"), mods.map(m => E.filter(r => r.sit === s && r.modalidade === m).length))), { stacked: true, dec: 0, legend: true });
+  const conta = k => Object.entries(x.reduce((m, r) => ((m[r[k] || "Não informado"] = (m[r[k] || "Não informado"] || 0) + 1), m), {})).sort((a, b) => b[1] - a[1]);
+  const ar = conta("area").slice(0, 12), mu = conta("campus").slice(0, 10);
+  grafico("l2", "bar", ar.map(a => a[0]), [barra("Cursos", cssVar("--c-se"), ar.map(a => a[1]))], { dec: 0, horizontal: true });
+  grafico("l3", "bar", mu.map(a => a[0]), [barra("Cursos", cssVar("--c-br"), mu.map(a => a[1]))], { dec: 0, horizontal: true });
+  const faixas = [["até 360 h", r => r.ch <= 360], ["361–450 h", r => r.ch > 360 && r.ch <= 450], ["451–600 h", r => r.ch > 450 && r.ch <= 600], ["mais de 600 h", r => r.ch > 600]];
+  grafico("l4", "bar", faixas.map(a => a[0]), [barra("Cursos", cssVar("--c-u"), faixas.map(([, fn]) => x.filter(r => r.ch != null && fn(r)).length))], { dec: 0 });
+
+  const cols = [{ h: "Curso", t: 1 }, { h: "Área", t: 1 }, { h: "Modalidade", t: 1 }, { h: "Município", t: 1 }, { h: "Situação", t: 1, f: v => `<span class="pill ${v === "Ativo" ? "em_dia" : ""}">${esc(v)}</span>` }, { h: "Vagas", f: v => fmt(v) }, { h: "Carga horária", f: v => fmt(v) }, { h: "Duração (meses)", f: v => fmt(v) }];
+  tabela($("#l-tab"), cols, x.map(r => ({ id: r.cod, v: [r.nome, r.area, r.modalidade, r.campus, r.sit, r.vagas, r.ch, r.dur] })), { ordem: 0 });
+  [["#l-sit", "sit"], ["#l-mod", "mod"], ["#l-area", "area"], ["#l-camp", "camp"]].forEach(([id, k]) => $(id).onchange = e => { f[k] = e.target.value; render(); });
+  $("#l-q").oninput = e => { f.q = e.target.value; const pos = e.target.selectionStart; render(); const q = $("#l-q"); q.focus(); q.setSelectionRange(pos, pos); };
+  $("#l-csv").onclick = () => baixar("especializacoes_ufscar.csv", csv([["codigo", "curso", "area", "modalidade", "municipio", "situacao", "vagas", "carga_horaria", "duracao_meses"], ...x.map(r => [r.cod, r.nome, r.area, r.modalidade, r.campus, r.sit, r.vagas ?? "", r.ch ?? "", r.dur ?? ""])]));
 };
 
 // ---------- Indicadores por nível do curso ----------
@@ -672,7 +806,8 @@ ABAS.sobre = el => {
     <li><b>Programas em rede:</b> programas com “em rede = sim” na base de Programas em que a UFSCar é a instituição sede ou consta entre as associadas. Os <b>4 programas em que a UFSCar é associada</b> (PROFMAT, PROFIS, PROEF e PROF-FILO) entram <b>sempre</b> nos totais da UFSCar (programas, discentes, docentes, conceitos), somados aos programas próprios, conforme a opção ligada por padrão no filtro. A CAPES registra os discentes e docentes desses programas sob o código do programa coordenador, sem distinguir a instituição de cada pessoa; portanto, nesses 4 programas os números são os da <b>rede inteira</b> e elevam bastante os totais da UFSCar. Desmarque “Incluir os 4 programas em rede” para ver só os programas próprios. No Sudeste e no Brasil esses programas ficam apenas na coordenadora (sem dupla contagem), de modo que o peso da UFSCar nessas comparações pode ficar superestimado.</li>
     <li><b>Indicadores por nível:</b> a aba “Por nível” separa mestrado acadêmico, mestrado profissional, doutorado acadêmico e doutorado profissional. Discentes são contados pelo nível em que estão matriculados; cursos e docentes, pelos programas que oferecem o nível (programa de mestrado e doutorado entra nos dois). O filtro “Nível” da barra superior também aceita cada nível isolado e vale para programas, discentes e docentes.</li>
     <li>Os indicadores de faixa etária, nacionalidade, bolsa de produtividade e titulação no exterior usam cubos sem o detalhe de grande área, então o filtro de área não os afeta (o painel avisa quando isso ocorre).</li>
-    <li><b>Quadrienal:</b> notas do resultado da Avaliação Quadrienal (ciclo 2021-2024, chamada oficialmente “Quadrienal 2025”), planilha da CAPES de 27/05/2026, cruzada pelo código do programa com a base de Programas 2024 (região, status e conceito anterior). O resultado só é definitivo após os recursos, conforme a CAPES.</li>
+    <li><b>Pós-Graduação Lato sensu:</b> cursos de especialização da UFSCar no cadastro do <a href="https://emec.mec.gov.br/" target="_blank" rel="noopener">e-MEC</a>, obtidos pela API Olinda do MEC (<code>etl/lato_sensu.py</code>; mesma fonte do repositório e-mec). É o retrato do cadastro na data da coleta, sem série histórica; “inativo” indica curso ou turma não mais ofertado. Cada turma pode constar como curso separado. Não há dados de matrículas ou concluintes de lato sensu nessa fonte.</li>
+    <li><b>Avaliação Quadrienal:</b> notas do resultado da Avaliação Quadrienal (ciclo 2021-2024, chamada oficialmente “Quadrienal 2025”), planilha da CAPES de 27/05/2026, cruzada pelo código do programa com a base de Programas 2024 (região, status e conceito anterior). O resultado só é definitivo após os recursos, conforme a CAPES.</li>
     <li><b>Dados de 2025:</b> a CAPES ainda não publicou no portal de dados abertos as bases de Programas, Discentes e Docentes do ano-base 2025 (o último ano disponível é 2024). O painel será atualizado quando saírem.</li>
     <li><b>Verificação automática:</b> um agendador (GitHub Actions semanal ou Agendador de Tarefas do Windows) roda <code>etl/atualizar.py</code>, que consulta o portal de dados abertos e a página da Quadrienal. Se há novo ano-base, arquivo revisado ou nova planilha, os dados são regerados e o painel exibe o aviso até a incorporação. ${D.status ? `Última verificação: ${dataBr(D.status.verificado_em)}.` : ""}</li>
     ${D.status ? `<li><b>Situação das fontes:</b><ul>${D.status.fontes.map(f => `<li><span class="pill ${f.situacao}">${esc(SIT[f.situacao] || f.situacao)}</span> ${esc(f.nome)}: ${esc(f.detalhe)}</li>`).join("")}</ul></li>` : ""}
@@ -760,7 +895,7 @@ function iniciaFiltros() {
   $("#f-rotulos").checked = S.rotulos;
   $("#f-rotulos").onchange = e => { S.rotulos = e.target.checked; try { localStorage.setItem("rotulos", S.rotulos ? "1" : "0"); } catch { } render(); };
   $$("#f-univ button").forEach(b => b.onclick = () => { S.univ = b.dataset.v; $$("#f-univ button").forEach(x => x.classList.toggle("on", x === b)); render(); });
-  $("#limpar").onclick = () => { Object.assign(S, { univ: "fed", area: "", grau: "", sem: false, ano: ANOS.at(-1), a0: ANOS[0], a1: ANOS.at(-1), busca: "", conc: "", mun: "", vinc: "", ord: "nota", grp: "", incRede: true }); $("#f-rede").checked = true; $("#f-area").value = ""; $("#f-grau").value = ""; $("#f-sem").checked = false; $("#f-ano").value = S.ano; $$("#f-univ button").forEach(x => x.classList.toggle("on", x.dataset.v === "fed")); render(); };
+  $("#limpar").onclick = () => { Object.assign(S, { univ: "fed", area: "", grau: "", sem: false, ano: ANOS.at(-1), a0: ANOS[0], a1: ANOS.at(-1), busca: "", conc: "", mun: "", vinc: "", ord: "nota", grp: "", incRede: true, qvin: "", qnota: "" }); $("#f-rede").checked = true; $("#f-area").value = ""; $("#f-grau").value = ""; $("#f-sem").checked = false; $("#f-ano").value = S.ano; $$("#f-univ button").forEach(x => x.classList.toggle("on", x.dataset.v === "fed")); render(); };
   $$("#abas button").forEach(b => b.onclick = () => ir(b.dataset.tab));
   $("#m-fechar").onclick = () => $("#modal").close();
   $("#modal").addEventListener("close", destruirModal);

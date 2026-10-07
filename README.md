@@ -57,3 +57,7 @@ Se surgir um programa novo, acrescente o código em `SITES` e rode o script.
 
 ## Design
 O visual segue o "Guia de design" de painéis de indicadores da ProPlan/UFSCar: azul-marinho `#244578`/`#0f4a85`, amarelo `#f2b705` para a entidade em foco (UFSCar), Open Sans, raio de 18 px, foco amarelo, menu fixo em grade 2×5, filtros em cartão com chips, faixa de abertura, figuras numeradas com exportação CSV, tabelas com cabeçalho azul-marinho e zebra, tema claro/escuro automático e impressão sem menu e filtros.
+
+## Avaliação Quadrienal e Pós-Graduação Lato sensu
+- A aba **Avaliação Quadrienal** reúne o resultado da Quadrienal 2025 e o painel de pós-graduação do projeto [e-mec](https://github.com/lemoschini-ops/e-mec): vínculo (sede, associação, rede), nota média, comparação com Sudeste e Brasil, notas ao longo dos ciclos, nota média por grande área, tabelas de programas em associação e em rede e consulta com exportação CSV.
+- A aba **Pós-Graduação Lato sensu** mostra as especializações da UFSCar no e-MEC. `py etl/lato_sensu.py` baixa o cadastro (API Olinda do MEC, IES 7) e grava `site/data/lato_sensu.json`; é um retrato do cadastro, sem série histórica.

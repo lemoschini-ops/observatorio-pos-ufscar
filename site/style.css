@@ -235,3 +235,6 @@ footer.rodape p{margin:.2rem 0}
 .filters-grid{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
 .filters-grid input[type=checkbox]{flex:none;width:1.05rem;height:1.05rem;accent-color:var(--navy)}
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+.nav-tabs{grid-template-columns:repeat(6,1fr)}
+@media (max-width:760px){.nav-tabs{grid-template-columns:repeat(2,1fr)}}
