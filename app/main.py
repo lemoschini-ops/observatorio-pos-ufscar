@@ -37,6 +37,10 @@ app = FastAPI(
 )
 client = httpx.AsyncClient(timeout=30)
 
+from app.corregedoria import router as corregedoria_router  # noqa: E402
+
+app.include_router(corregedoria_router)
+
 
 async def consultar(path: str, params: dict) -> list | dict:
     if not API_KEY:
