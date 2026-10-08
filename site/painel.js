@@ -14,7 +14,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
 const FAIXA = {Inexpressivo: C.bad, Iniciando: C.warn, Intermediário: C.blue, Aprimorado: C.ok};
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-const TABS = ['home', 'tcu', 'comp', 'iesgo', 'lai', 'ouv'];
+const TABS = ['home', 'tcu', 'comp', 'iesgo', 'lai', 'ouv', 'cor'];
 let D, charts = {}, csvStore = {}, tab = 'home';
 Chart.defaults.font.family = '"Open Sans",sans-serif';
 function themeCharts() { Chart.defaults.color = cv('--muted'); Chart.defaults.borderColor = cv('--border'); }
@@ -97,8 +97,8 @@ function render() {
   const s = getS(); tab = TABS.includes(s.tab) ? s.tab : 'home';
   $$('#nav .tab').forEach(b => { const on = b.dataset.t === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
   $$('main > section').forEach(e => e.classList.toggle('on', e.id === tab));
-  document.title = ({home: 'Visão geral', tcu: 'Indicadores TCU', comp: 'Comparativo', iesgo: 'iESGo', lai: 'Acesso à Informação', ouv: 'Ouvidoria'})[tab] + ' · Painel UFSCar';
-  ({home, tcu, comp, iesgo, lai, ouv})[tab](s);
+  document.title = ({home: 'Visão geral', tcu: 'Indicadores TCU', comp: 'Comparativo', iesgo: 'iESGo', lai: 'Acesso à Informação', ouv: 'Ouvidoria', cor: 'Corregedoria'})[tab] + ' · Painel UFSCar';
+  ({home, tcu, comp, iesgo, lai, ouv, cor})[tab](s);
 }
 
 /* ======================= VISÃO GERAL ======================= */
@@ -312,4 +312,68 @@ function ouv(s) {
     tb, {sort: 1, search: true, sel: r => r.ass === ass, onRow: r => setS({ass: r.ass === ass ? '' : r.ass})});
   setCsv('oass', 'ouvidoria_assuntos', ['Assunto', 'Manifestações', 'Tempo médio (dias)', '% no prazo'], tb.map(r => [r.ass, r.n, r.tempo, r.prazo]));
   $('#srcOuv').innerHTML = `Fonte: ${src({nome: O.fonte, url: O.url})}. ${O.nota} Referência: universidades federais = soma dos órgãos “Universidade Federal …”; prazo legal de resposta: 30 dias.`;
+}
+
+/* ======================= CORREGEDORIA ======================= */
+function cor(s) {
+  const R = D.cgu?.correicao; if (!R) { $('#corKpis').innerHTML = '<div class="note">Corregedoria não coletada.</div>'; return; }
+  const L = R.linhas, T = R.tipos, F = R.fases, A = R.assuntos, last = R.ano_ultimo_completo;
+  const anos = []; for (let a = 2012; a <= last; a++) anos.push(a);
+  const de = anos.includes(+s.de) ? +s.de : anos[0], ate = anos.includes(+s.ate) ? +s.ate : last, lo = Math.min(de, ate), hi = Math.max(de, ate), inR = a => a >= lo && a <= hi;
+  const tipos = (s.tipo || '').split(',').filter(Boolean), ass = s.ass || '', grp = ['SP', 'Sudeste', 'Brasil'].includes(s.grp) ? s.grp : 'Brasil';
+  const MET = {pm: ['Procedimentos por 1.000 servidores', 'proc./1.000'], ipm: ['Investigados por 1.000 servidores', 'invest./1.000'], pj: ['Procedimentos julgados', '%'], dm: ['Tempo médio até o julgamento', 'dias'], n: ['Procedimentos instaurados', 'nº']};
+  const met = MET[s.met] ? s.met : 'pm';
+  const CO = {ano: 0, tipo: 1, fase: 2, ass: 3, inv: 4, adv: 5, sus: 6, exp: 7, out: 8, dias: 9};
+  const okT = r => !tipos.length || tipos.includes(T[r[CO.tipo]]), okA = r => !ass || A[r[CO.ass]] === ass;
+  const base = L.filter(r => r[0] <= last), rows = base.filter(r => okT(r) && okA(r) && inR(r[0]));
+  const yo = anos.map(a => [a, a]); fillSelect('#rDe', yo, de, v => setS({de: v})); fillSelect('#rAte', yo, ate, v => setS({ate: v}));
+  const cnt = {}; base.filter(r => inR(r[0])).forEach(r => cnt[T[r[CO.tipo]]] = (cnt[T[r[CO.tipo]]] || 0) + 1);
+  chips('#rTipos', T.slice().sort((a, b) => (cnt[b] || 0) - (cnt[a] || 0)).map(t => [t, t]), tipos, t => setS({tipo: (tipos.includes(t) ? tipos.filter(x => x !== t) : [...tipos, t]).join(',')}));
+  $('#rAss').innerHTML = ass ? `<button class="chip on" id="rAssX" title="Remover filtro">Assunto: ${esc(ass)}<span class="x">✕</span></button>` : ''; if (ass) $('#rAssX').onclick = () => setS({ass: ''});
+  seg('#rGrp', grp, v => setS({grp: v})); $('#rReset').onclick = () => setS({de: '', ate: '', tipo: '', ass: '', grp: ''});
+  $('#corNota').innerHTML = '<b>Atenção:</b> ' + esc(R.nota);
+
+  // universidades: métricas no período
+  const inG = u => grp === 'Brasil' || (grp === 'SP' ? u.uf === 'SP' : u.regiao === 'Sudeste');
+  const stU = u => { let n = 0, inv = 0, ju = 0, ds = 0, dn = 0; for (const [y, v] of Object.entries(u.anos)) if (inR(+y)) { n += v[0]; inv += v[1]; ju += v[2]; ds += v[3]; dn += v[4]; }
+    return {n, pm: 1000 * n / u.servidores, ipm: 1000 * inv / u.servidores, pj: n ? 100 * ju / n : null, dm: dn ? ds / dn : null}; };
+  const U = R.universidades.map(u => ({...u, ...stU(u)})), isU = u => u.sigla === 'UFSCAR', uf = U.find(isU);
+  const grupos = {SP: U.filter(u => u.uf === 'SP'), Sudeste: U.filter(u => u.regiao === 'Sudeste'), Brasil: U};
+  const gm = (g, k) => { const v = g.map(u => u[k]).filter(x => x != null); return v.length ? mean(v) : null; };
+  const temDado = (u, k) => u[k] != null && (k === 'n' || k === 'pm' || k === 'ipm' || u.n > 0);
+
+  // KPIs
+  const pad = rows.filter(r => T[r[CO.tipo]] === 'PAD').length, jul = rows.filter(r => F[r[CO.fase]] === 'Julgado').length, dd = rows.map(r => r[CO.dias]).filter(x => x != null), sm = k => rows.reduce((a, r) => a + r[CO[k]], 0);
+  const tm = mean(dd), ref = gm(U.filter(u => u.n > 0), 'dm'), c = R.ceaf;
+  $('#corKpis').innerHTML = kpi(`Procedimentos (${lo === hi ? lo : lo + '–' + hi})`, fmt(rows.length, 0), `${fmt(pad, 0)} PAD · ${fmt(rows.length - pad, 0)} sindicâncias e outros`, {x: uf ? `<span class="pos">${fmt(uf.pm, 1)} por 1.000 servidores · média Brasil ${fmt(gm(U, 'pm'), 1)}</span>` : ''}) +
+    kpi('Julgados', rows.length ? fmt(100 * jul / rows.length) + '%' : '—', `${fmt(jul, 0)} de ${fmt(rows.length, 0)}`) +
+    kpi('Tempo médio até o julgamento', tm == null ? '—' : fmt(tm, 0) + ' d', ref ? `Universidades federais (período): ${fmt(ref, 0)} d` : '', {x: ref && tm != null ? delta(tm, ref, true, 0, ' d') : ''}) +
+    kpi('Investigados', fmt(sm('inv'), 0), `Penalidades: ${sm('adv')} advertências · ${sm('sus')} suspensões · ${sm('exp')} expulsivas · ${sm('out')} outras`) +
+    kpi('Expulsões (CEAF)', c ? fmt(c.ufscar, 0) : '—', c ? `Universidades federais: ${fmt(c.universidades_federais, 0)} · cadastro de ${c.data_arquivo}` : 'Cadastro não coletado');
+
+  // figuras
+  const byY = anos.map(a => base.filter(r => r[0] === a && okT(r) && okA(r)).length);
+  chart('cRAno', {type: 'bar', data: {labels: anos, datasets: [{data: byY, backgroundColor: anos.map(a => inR(a) ? C.base : C.base + '44')}]}, options: {plugins: {legend: {display: false}}, onClick: (e, el) => el[0] && setS({de: anos[el[0].index], ate: anos[el[0].index]})}});
+  const perY = (list, a) => { const v = list.map(u => u.anos[a] ? 1000 * u.anos[a][0] / u.servidores : 0); return v.length ? mean(v) : null; };
+  const ln = (l, col, f, w = 2) => ({label: l, data: anos.map(f), borderColor: col, backgroundColor: col, tension: .2, borderWidth: w, pointRadius: 3});
+  chart('cRMil', {type: 'line', data: {labels: anos, datasets: [ln('UFSCar', C.base, a => perY(R.universidades.filter(isU), a), 3), ln('Média SP', C.sky, a => perY(grupos.SP, a)), ln('Média Sudeste', C.teal, a => perY(grupos.Sudeste, a)), ln('Média Brasil', C.gray, a => perY(grupos.Brasil, a))]}, options: {scales: {y: {beginAtZero: true}}}});
+  const bt = T.map((t, i) => base.filter(r => r[CO.tipo] === i && okA(r) && inR(r[0])).length);
+  chart('cRTipo', {type: 'doughnut', data: {labels: T, datasets: [{data: bt, backgroundColor: T.map((t, i) => !tipos.length || tipos.includes(t) ? PALETTE[i] : PALETTE[i] + '33')}]}, options: {plugins: {legend: {position: 'right', labels: {boxWidth: 12}}}, onClick: (e, el) => el[0] && setS({tipo: tipos.length === 1 && tipos[0] === T[el[0].index] ? '' : T[el[0].index]})}});
+  const bf = F.map((f, i) => rows.filter(r => r[CO.fase] === i).length);
+  chart('cRFase', {type: 'doughnut', data: {labels: F, datasets: [{data: bf, backgroundColor: PALETTE.slice(0, F.length)}]}, options: {plugins: {legend: {position: 'right', labels: {boxWidth: 12}}}}});
+  const ac = {}; base.filter(r => okT(r) && inR(r[0])).forEach(r => ac[r[CO.ass]] = (ac[r[CO.ass]] || 0) + 1);
+  const top = Object.entries(ac).sort((a, b) => b[1] - a[1]);
+  chart('cRAss', {type: 'bar', data: {labels: top.map(x => A[x[0]]), datasets: [{data: top.map(x => x[1]), backgroundColor: top.map(x => A[x[0]] === ass ? C.yellow : C.sky)}]}, options: {indexAxis: 'y', plugins: {legend: {display: false}}, scales: {y: {ticks: {autoSkip: false, font: {size: 11}}}}, onClick: (e, el) => el[0] && setS({ass: A[top[el[0].index][0]] === ass ? '' : A[top[el[0].index][0]]})}});
+
+  // comparativo
+  fillSelect('#rMet', Object.entries(MET).map(([k, m]) => [k, m[0]]), met, v => setS({met: v}));
+  $('#rMetDesc').textContent = `${MET[met][0]} (${MET[met][1]}), ${lo === hi ? lo : lo + '–' + hi}. Grupo: ${GR[grp]}. Universidades sem registros no período ficam de fora dos indicadores de julgamento e tempo.`;
+  const Lr = U.filter(inG).filter(u => temDado(u, met)).sort((a, b) => b[met] - a[met]);
+  $('#rRankBox').style.height = Math.max(300, Lr.length * 17 + 50) + 'px';
+  chart('cRRank', {type: 'bar', data: {labels: Lr.map(u => u.sigla), datasets: [{data: Lr.map(u => u[met]), backgroundColor: Lr.map(u => isU(u) ? C.yellow : C.base)}]}, options: {indexAxis: 'y', plugins: {legend: {display: false}, tooltip: {callbacks: {title: i => Lr[i[0].dataIndex].nome, label: c => `${fmt(c.parsed.x, 1)} ${MET[met][1]}`}}}, scales: {y: {ticks: {font: {size: 11}, autoSkip: false}}}}});
+  setCsv('rrank', 'corregedoria_ranking_' + met, ['Posição', 'Sigla', 'Universidade', 'UF', 'Servidores', MET[met][0]], Lr.map((u, i) => [i + 1, u.sigla, u.nome, u.uf, u.servidores, u[met]]));
+  const rk = (g, k) => { const l = g.filter(u => temDado(u, k)).sort((a, b) => b[k] - a[k]), p = l.findIndex(isU); return p < 0 ? '—' : `${p + 1}º/${l.length}`; };
+  const rowsG = [['pm', 'Procedimentos por 1.000 servidores', 1], ['ipm', 'Investigados por 1.000 servidores', 1], ['pj', 'Procedimentos julgados (%)', 1], ['dm', 'Tempo médio até o julgamento (dias)', 0]].map(([k, l, d]) => ({k, l, d}));
+  dtable('#tRGrp', [{label: 'Indicador', get: r => r.l, fmt: v => `<b>${v}</b>`}, {label: 'UFSCar', n: 1, get: r => uf?.[r.k], fmt: (v, r) => `<b>${fmt(v, r.d)}</b>`}, ...['SP', 'Sudeste', 'Brasil'].map(g => ({label: GR[g], n: 1, get: r => gm(grupos[g].filter(u => temDado(u, r.k)), r.k), fmt: (v, r) => `${fmt(v, r.d)}<div class="pos">UFSCar ${rk(grupos[g], r.k)}</div>`}))], rowsG, {sort: null});
+  $('#srcCor').innerHTML = `Fontes: ${src({nome: R.fonte, url: R.url})} · ${src({nome: R.fonte_ceaf, url: R.url_ceaf})}. Servidores = docentes + técnicos-administrativos (INEP, Censo 2024) como denominador fixo; as médias dos grupos são médias simples entre universidades.`;
 }

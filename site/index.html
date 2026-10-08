@@ -18,6 +18,7 @@
   <button class="tab" role="tab" data-t="iesgo">TCU · iESGo</button>
   <button class="tab" role="tab" data-t="lai">CGU · Acesso à Informação</button>
   <button class="tab" role="tab" data-t="ouv">CGU · Ouvidoria</button>
+  <button class="tab" role="tab" data-t="cor">CGU · Corregedoria</button>
   <div class="nav-tools"><button id="bTheme" title="Alternar tema claro/escuro">◐ Tema</button></div>
 </div></nav>
 <main id="main">
@@ -132,6 +133,31 @@
   </div>
   <div class="card"><div class="head"><h3>Assuntos (tabela)</h3><span class="sp"></span><button class="btn sm" data-csv="oass">CSV</button></div><div id="tOAssBox"></div></div>
   <div class="src" id="srcOuv"></div>
+</section>
+
+<!-- ===== CORREGEDORIA ===== -->
+<section id="cor">
+  <h2>Corregedoria (CGU-PAD e CEAF)</h2>
+  <p class="lead">Procedimentos disciplinares da UFSCar registrados no sistema CGU-PAD e expulsões do cadastro CEAF, comparados com as universidades federais.</p>
+  <div class="note w" id="corNota"></div>
+  <div class="toolbar">
+    <label>De <select id="rDe"></select></label><label>até <select id="rAte"></select></label>
+    <span class="chips" id="rTipos"></span><span class="chips" id="rAss"></span>
+    <label>Comparar com <span class="seg" id="rGrp"><button data-v="SP">São Paulo</button><button data-v="Sudeste">Sudeste</button><button data-v="Brasil">Brasil</button></span></label>
+    <button class="btn sm" id="rReset">Limpar filtros</button>
+  </div>
+  <div class="grid" id="corKpis"></div>
+  <div class="grid g2">
+    <div class="card"><div class="head"><h3>Procedimentos instaurados por ano</h3><span class="sp"></span><button class="btn sm" data-png="cRAno">PNG</button></div><div class="pos">Clique em uma barra para filtrar o ano.</div><div class="canvas sm"><canvas id="cRAno"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Por 1.000 servidores</h3><span class="sp"></span><button class="btn sm" data-png="cRMil">PNG</button></div><div class="pos">Procedimentos instaurados por 1.000 servidores (docentes + técnicos, Censo 2024): UFSCar e média dos grupos.</div><div class="canvas sm"><canvas id="cRMil"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Tipo de procedimento</h3><span class="sp"></span><button class="btn sm" data-png="cRTipo">PNG</button></div><div class="pos">Clique em uma fatia para filtrar o tipo.</div><div class="canvas sm"><canvas id="cRTipo"></canvas></div></div>
+    <div class="card"><div class="head"><h3>Situação atual</h3><span class="sp"></span><button class="btn sm" data-png="cRFase">PNG</button></div><div class="canvas sm"><canvas id="cRFase"></canvas></div></div>
+    <div class="card" style="grid-column:1/-1"><div class="head"><h3>Assuntos</h3><span class="sp"></span><button class="btn sm" data-png="cRAss">PNG</button></div><div class="pos">Clique em uma barra para filtrar o assunto.</div><div style="position:relative;height:300px"><canvas id="cRAss"></canvas></div></div>
+  </div>
+  <div class="card" style="margin-bottom:1.1rem"><div class="head"><h3>Comparativo com universidades federais</h3><label class="pos">Indicador <select id="rMet"></select></label><span class="sp"></span><button class="btn sm" data-png="cRRank">PNG</button><button class="btn sm" data-csv="rrank">CSV</button></div><div class="pos" id="rMetDesc"></div>
+    <div style="max-height:520px;overflow-y:auto"><div style="position:relative" id="rRankBox"><canvas id="cRRank"></canvas></div></div></div>
+  <div class="card"><div class="head"><h3>Resumo por grupo</h3></div><div class="scroll free"><table id="tRGrp"></table></div></div>
+  <div class="src" id="srcCor"></div>
 </section>
 
 </main>

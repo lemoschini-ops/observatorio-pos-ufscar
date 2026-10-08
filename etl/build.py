@@ -1,7 +1,7 @@
 """Coleta indicadores de TCU (iESGo) e CGU (LAI/Fala.BR e Portal da Transparência)
 da UFSCar e grava data/painel.json, consumido pelo painel (static/painel.html).
 
-Uso:  py -m etl.build [--only iesgo,lai,ouv,portal,comp] [--anos 2020-2026]
+Uso:  py -m etl.build [--only iesgo,lai,ouv,cor,portal,comp] [--anos 2020-2026]
 
 Fontes (todas oficiais):
   iesgo  - TCU, planilha pública do levantamento iESGo 2024 (não há API)   https://iesgo.tcu.gov.br
@@ -410,7 +410,7 @@ def coletar_portal(anos: list[int]) -> dict:
 # --------------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--only", default="iesgo,lai,ouv,comp")
+    ap.add_argument("--only", default="iesgo,lai,ouv,cor,comp")
     ap.add_argument("--anos", default=f"2020-{date.today().year}")
     a = ap.parse_args()
     ini, fim = (int(x) for x in a.anos.split("-"))
@@ -430,6 +430,10 @@ def main():
     if "ouv" in quais:
         print("CGU Ouvidoria", flush=True)
         painel["cgu"]["ouvidoria"] = coletar_ouvidoria()
+    if "cor" in quais:
+        from etl import correicao
+        print("CGU Corregedoria (CGU-PAD e CEAF)", flush=True)
+        painel["cgu"]["correicao"] = correicao.coletar_correicao()
     if "portal" in quais:
         print("CGU Portal da Transparência", flush=True)
         painel["cgu"]["portal"] = coletar_portal(anos)

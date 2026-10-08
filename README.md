@@ -43,3 +43,8 @@ Os indicadores comparativos são **calculados** com fórmulas simplificadas (ex.
 
 ### Publicação estática (Cloudflare Pages)
 `py -m etl.export_site` gera a pasta `site/` (HTML, CSS, JS e `data/painel.json`), sem servidor. No Cloudflare Pages: conectar este repositório, *Build command* vazio e *Build output directory* `site`. Para atualizar: `py -m etl.build`, `py -m etl.export_site`, commit e push.
+
+### Corregedoria (`--only cor`)
+- **CGU-PAD** (dados abertos da CGU): procedimentos disciplinares por órgão. Guardam-se só linhas anônimas da UFSCar (ano, tipo, fase, assunto, nº de investigados, penalidades, dias até o julgamento) e totais por universidade e ano, sem número de processo.
+- **CEAF** (Portal da Transparência, arquivo diário): só contagem de expulsões com lotação na UFSCar e nas universidades federais; nomes e CPF não são guardados.
+- O extrato público do CGU-PAD tem poucos registros a partir de 2023, então a análise vai até 2022. A comparação usa procedimentos por 1.000 servidores (docentes + técnicos do Censo 2024).

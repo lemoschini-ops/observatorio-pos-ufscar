@@ -31,7 +31,7 @@ input,select{background:var(--surface);border:1px solid var(--border);border-rad
 
 /* navegação */
 nav{background:var(--nav-bg);position:sticky;top:0;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-nav .in{max-width:1320px;margin:auto;padding:0 clamp(.5rem,3vw,2rem);display:grid;grid-template-columns:repeat(6,1fr) auto;align-items:stretch;gap:0 .2rem}
+nav .in{max-width:1320px;margin:auto;padding:0 clamp(.5rem,3vw,2rem);display:grid;grid-template-columns:repeat(7,1fr) auto;align-items:stretch;gap:0 .2rem}
 .tab{background:none;border:0;border-bottom:4px solid transparent;padding:.8rem .5rem .65rem;color:var(--nav-text);font-weight:600;text-transform:uppercase;font-size:.8rem;letter-spacing:.02em;text-align:center}
 .tab:hover{background:rgba(36,69,120,.09)}
 .tab.on{border-bottom-color:var(--yellow);color:var(--heading);background:rgba(255,255,255,.55)}
