@@ -7874,6 +7874,369 @@
    "url": "https://falabr.cgu.gov.br/publico/DownloadDados/DownloadDadosAbertos.aspx",
    "anos": [
     {
+     "ano": 2020,
+     "ufscar": {
+      "pedidos": 219,
+      "tempo_medio_dias": 9.5,
+      "tempo_mediano_dias": 7,
+      "pct_no_prazo": 100.0,
+      "pct_prorrogado": 8.7,
+      "pct_acesso_concedido": 92.7,
+      "decisoes": [
+       [
+        "Acesso Concedido",
+        196
+       ],
+       [
+        "Acesso Parcialmente Concedido",
+        7
+       ],
+       [
+        "Pergunta Duplicada/Repetida",
+        4
+       ],
+       [
+        "Não se trata de solicitação de informação",
+        4
+       ],
+       [
+        "Informação Inexistente",
+        3
+       ],
+       [
+        "Acesso Negado",
+        3
+       ],
+       [
+        "Órgão não tem competência para responder sobre o assunto",
+        2
+       ]
+      ],
+      "assuntos": [
+       [
+        "Educação Superior",
+        162
+       ],
+       [
+        "Acesso à informação",
+        32
+       ],
+       [
+        "Universidades e Institutos",
+        4
+       ],
+       [
+        "Cotas",
+        3
+       ],
+       [
+        "Outros em Educação",
+        2
+       ],
+       [
+        "Processo Seletivo",
+        2
+       ],
+       [
+        "Planejamento e Gestão",
+        2
+       ],
+       [
+        "Transparência",
+        2
+       ],
+       [
+        "FIES",
+        1
+       ],
+       [
+        "Gestão de Pessoas",
+        1
+       ]
+      ],
+      "por_mes": [
+       14,
+       21,
+       13,
+       17,
+       16,
+       23,
+       30,
+       25,
+       20,
+       14,
+       16,
+       10
+      ],
+      "recursos": 19,
+      "recursos_por_instancia": [
+       [
+        "Primeira Instância",
+        16
+       ],
+       [
+        "Segunda Instância",
+        3
+       ]
+      ],
+      "recursos_por_100_pedidos": 8.7
+     },
+     "universidades_federais": {
+      "pedidos": 12831,
+      "tempo_medio_dias": 16.0,
+      "tempo_mediano_dias": 13,
+      "pct_no_prazo": 90.1,
+      "pct_prorrogado": 0.0,
+      "pct_acesso_concedido": null
+     },
+     "executivo_federal": {
+      "pedidos": 110663,
+      "tempo_medio_dias": 13.2,
+      "tempo_mediano_dias": 10,
+      "pct_no_prazo": 96.3,
+      "pct_prorrogado": 0.0,
+      "pct_acesso_concedido": null
+     }
+    },
+    {
+     "ano": 2021,
+     "ufscar": {
+      "pedidos": 110,
+      "tempo_medio_dias": 9.0,
+      "tempo_mediano_dias": 7.0,
+      "pct_no_prazo": 99.1,
+      "pct_prorrogado": 10.9,
+      "pct_acesso_concedido": 90.9,
+      "decisoes": [
+       [
+        "Acesso Concedido",
+        95
+       ],
+       [
+        "Acesso Parcialmente Concedido",
+        5
+       ],
+       [
+        "Pergunta Duplicada/Repetida",
+        4
+       ],
+       [
+        "Não se trata de solicitação de informação",
+        3
+       ],
+       [
+        "Acesso Negado",
+        2
+       ],
+       [
+        "Informação Inexistente",
+        1
+       ]
+      ],
+      "assuntos": [
+       [
+        "Acesso à informação",
+        34
+       ],
+       [
+        "Educação Superior",
+        22
+       ],
+       [
+        "Outros em Educação",
+        7
+       ],
+       [
+        "Universidades e Institutos",
+        7
+       ],
+       [
+        "Coronavírus (COVID-19)",
+        3
+       ],
+       [
+        "Transparência",
+        2
+       ],
+       [
+        "Compras públicas",
+        2
+       ],
+       [
+        "Auditoria",
+        2
+       ],
+       [
+        "Gestão de Pessoas",
+        2
+       ],
+       [
+        "Outros em Administração",
+        2
+       ]
+      ],
+      "por_mes": [
+       8,
+       14,
+       13,
+       8,
+       11,
+       7,
+       9,
+       6,
+       11,
+       9,
+       7,
+       7
+      ],
+      "recursos": 4,
+      "recursos_por_instancia": [
+       [
+        "Primeira Instância",
+        4
+       ]
+      ],
+      "recursos_por_100_pedidos": 3.6
+     },
+     "universidades_federais": {
+      "pedidos": 9056,
+      "tempo_medio_dias": 14.9,
+      "tempo_mediano_dias": 12.0,
+      "pct_no_prazo": 91.4,
+      "pct_prorrogado": 0.0,
+      "pct_acesso_concedido": null
+     },
+     "executivo_federal": {
+      "pedidos": 79111,
+      "tempo_medio_dias": 12.8,
+      "tempo_mediano_dias": 10,
+      "pct_no_prazo": 96.9,
+      "pct_prorrogado": 0.0,
+      "pct_acesso_concedido": null
+     }
+    },
+    {
+     "ano": 2022,
+     "ufscar": {
+      "pedidos": 136,
+      "tempo_medio_dias": 16.1,
+      "tempo_mediano_dias": 12.0,
+      "pct_no_prazo": 84.6,
+      "pct_prorrogado": 20.6,
+      "pct_acesso_concedido": 94.9,
+      "decisoes": [
+       [
+        "Acesso Concedido",
+        116
+       ],
+       [
+        "Acesso Parcialmente Concedido",
+        13
+       ],
+       [
+        "Órgão não tem competência para responder sobre o assunto",
+        4
+       ],
+       [
+        "Não se trata de solicitação de informação",
+        1
+       ],
+       [
+        "Acesso Negado",
+        1
+       ],
+       [
+        "Informação Inexistente",
+        1
+       ]
+      ],
+      "assuntos": [
+       [
+        "Acesso à informação",
+        47
+       ],
+       [
+        "Universidades e Institutos",
+        21
+       ],
+       [
+        "Coronavírus (COVID-19)",
+        19
+       ],
+       [
+        "Educação Superior",
+        14
+       ],
+       [
+        "Cotas",
+        3
+       ],
+       [
+        "Outros em Administração",
+        2
+       ],
+       [
+        "Bolsas",
+        2
+       ],
+       [
+        "Auxílio",
+        2
+       ],
+       [
+        "Compras públicas",
+        2
+       ],
+       [
+        "Planejamento e Gestão",
+        2
+       ]
+      ],
+      "por_mes": [
+       10,
+       13,
+       9,
+       8,
+       36,
+       15,
+       13,
+       14,
+       5,
+       5,
+       4,
+       4
+      ],
+      "recursos": 14,
+      "recursos_por_instancia": [
+       [
+        "Primeira Instância",
+        10
+       ],
+       [
+        "Segunda Instância",
+        4
+       ]
+      ],
+      "recursos_por_100_pedidos": 10.3
+     },
+     "universidades_federais": {
+      "pedidos": 7143,
+      "tempo_medio_dias": 12.6,
+      "tempo_mediano_dias": 10,
+      "pct_no_prazo": 93.9,
+      "pct_prorrogado": 0.0,
+      "pct_acesso_concedido": null
+     },
+     "executivo_federal": {
+      "pedidos": 69062,
+      "tempo_medio_dias": 12.0,
+      "tempo_mediano_dias": 10.0,
+      "pct_no_prazo": 97.9,
+      "pct_prorrogado": 0.0,
+      "pct_acesso_concedido": null
+     }
+    },
+    {
      "ano": 2023,
      "ufscar": {
       "pedidos": 141,
@@ -102046,5 +102409,5 @@
    "nota": "Cada linha é um procedimento, sem número de processo, sem nomes e sem dados dos investigados. O extrato público do CGU-PAD tem poucos registros de instaurações a partir de 2023 (89 no país inteiro), por isso a análise vai até 2022."
   }
  },
- "gerado_em": "2026-10-08T14:10:07"
+ "gerado_em": "2026-10-08T16:04:14"
 }

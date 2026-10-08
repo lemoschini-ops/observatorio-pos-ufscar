@@ -132,13 +132,17 @@ function home() {
   if (ie) { const f = I.indices.find(x => x.sigla === 'iESGo').faixa; cards.push(kpi('iESGo 2024 (TCU)', pct(ie.ufscar), `${ie.Brasil.posicao}º de ${ie.Brasil.n} universidades federais · média ${pct(ie.Brasil.media)}`, {go: {tab: 'iesgo'}, x: `<span class="tag" style="background:${FAIXA[f]}">${f}</span>`})); }
   const R = K?.resumo?.[K.ano_referencia];
   if (R) for (const [k, l] of [['iqcd', 'Qualificação docente (IQCD)'], ['capes', 'Conceito CAPES médio']]) cards.push(kpi(l, fmt(R[k].ufscar, 2), `${R[k].Brasil.posicao}º de ${R[k].Brasil.n} · média Brasil ${fmt(R[k].Brasil.media, 2)}`, {}));
-  const cc = T?.indicadores.find(x => x.codigo === '9.1.2.1.1')?.serie; if (cc) cards.push(kpi('Custo corrente por aluno equivalente', 'R$ ' + fmt(cc['2025'], 0), `2024: R$ ${fmt(cc['2024'], 0)} (série ProPlan)`, {go: {tab: 'tcu'}}));
   if (L?.anos.length) { const u = L.anos.at(-1); cards.push(kpi(`Pedidos LAI ${u.ano}`, fmt(u.ufscar.pedidos, 0), `Tempo médio ${fmt(u.ufscar.tempo_medio_dias)} d (universidades: ${fmt(u.universidades_federais.tempo_medio_dias)} d)`, {go: {tab: 'lai'}})); }
   if (O) { const a = Math.max(...O.linhas.filter(r => r[3] === 0).map(r => r[0])), rs = O.linhas.filter(r => r[3] === 0 && r[0] === a), p = rs.filter(r => r[7] != null), ref = O.referencia[a]?.universidades_federais;
     cards.push(kpi(`Manifestações de Ouvidoria ${a}`, fmt(rs.length, 0), `${fmt(100 * mean(p.map(r => r[7])), 1)}% no prazo (universidades: ${fmt(ref?.pct_no_prazo)}%)`, {go: {tab: 'ouv'}})); }
+  const CR = D.cgu?.correicao;
+  if (CR) { const ua = String(CR.ano_ultimo_completo), us = CR.universidades, uf = us.find(x => x.sigla === 'UFSCAR'), v = x => x.anos[ua] ? 1000 * x.anos[ua][0] / x.servidores : null, md = us.map(v).filter(x => x != null).sort((a, b) => a - b);
+    if (uf && v(uf) != null) cards.push(kpi(`Procedimentos disciplinares ${ua}`, fmt(uf.anos[ua][0], 0), `${fmt(v(uf), 1)} por 1.000 servidores · mediana das universidades ${fmt(md[Math.floor((md.length - 1) / 2)], 1)}`, {go: {tab: 'cor'}})); }
+  const AU = D.auditoria?.relatorios?.at(-1);
+  if (AU) cards.push(kpi(`Recomendações da Auditoria Interna (${AU.rotulo})`, fmt(AU.recomendacoes_acompanhadas, 0), `${fmt(AU.recomendacoes_implementadas, 0)} implementadas · ${fmt(AU.recomendacoes_pendentes, 0)} pendentes`, {go: {tab: 'aud'}}));
   $('#homeKpis').innerHTML = cards.join('');
   if (ie) { $('#heroNum').textContent = pct(ie.ufscar); $('#heroLbl').textContent = `iESGo 2024 · ${ie.Brasil.posicao}º de ${ie.Brasil.n} universidades federais`; }
-  $('#quick').innerHTML = [['tcu', 'Indicadores TCU'], ['iesgo', 'iESGo'], ['lai', 'Acesso à Informação'], ['ouv', 'Ouvidoria']].map(([t, l]) => `<button data-q="${t}">${l}</button>`).join('');
+  $('#quick').innerHTML = [['tcu', 'Indicadores TCU'], ['iesgo', 'iESGo'], ['lai', 'Acesso à Informação'], ['ouv', 'Ouvidoria'], ['cor', 'Corregedoria'], ['integ', 'Integridade'], ['aud', 'Auditoria Interna']].map(([t, l]) => `<button data-q="${t}">${l}</button>`).join('');
   $('#quick').onclick = e => { const b = e.target.closest('[data-q]'); if (b) go(b.dataset.q); };
   if (R) {
     const ks = Object.keys(K.metricas).filter(k => R[k]?.Brasil), pc = k => { const g = R[k].Brasil; return g.n > 1 ? 100 * (g.n - g.posicao) / (g.n - 1) : 50; };
@@ -153,6 +157,7 @@ function home() {
     if (t <= 1 / 3) ins.push([1, `iESGo · ${x.nome}: <b>${x.posicao_ifes}º de ${x.n_ifes}</b> instituições de ensino (${pct(x.ufscar)}).`, {tab: 'iesgo', idx: x.sigla}]);
     else if (t > 2 / 3) ins.push([-1, `iESGo · ${x.nome}: <b>${x.posicao_ifes}º de ${x.n_ifes}</b> instituições de ensino (${pct(x.ufscar)}; média ${pct(x.media_ifes)}).`, {tab: 'iesgo', idx: x.sigla}]); }
   if (L?.anos.length) { const u = L.anos.at(-1); if (u.ufscar.pct_no_prazo != null && u.universidades_federais.pct_no_prazo != null) ins.push([u.ufscar.pct_no_prazo >= u.universidades_federais.pct_no_prazo ? 1 : -1, `LAI ${u.ano}: ${fmt(u.ufscar.pct_no_prazo)}% respondidos no prazo (universidades federais: ${fmt(u.universidades_federais.pct_no_prazo)}%).`, {tab: 'lai'}]); }
+  if (AU && AU.recomendacoes_acompanhadas) { const pc = 100 * AU.recomendacoes_implementadas / AU.recomendacoes_acompanhadas; if (pc < 10) ins.push([-1, `Auditoria Interna ${AU.rotulo}: só <b>${fmt(pc, 1)}%</b> das ${fmt(AU.recomendacoes_acompanhadas, 0)} recomendações em acompanhamento foram implementadas.`, {tab: 'aud'}]); }
   ins.sort((a, b) => b[0] - a[0]);
   $('#insights').innerHTML = ins.length ? ins.map((x, i) => `<div class="insight"><span class="dot" style="background:${x[0] > 0 ? C.ok : C.bad}"></span><span><b>${x[0] > 0 ? 'Destaque' : 'Atenção'}:</b> ${x[1]}${x[2] ? ` <a data-i="${i}">ver</a>` : ''}</span></div>`).join('') : '<div class="empty">Sem dados suficientes.</div>';
   $('#insights').onclick = e => { const a = e.target.closest('a[data-i]'); if (a) go(ins[+a.dataset.i][2].tab, ins[+a.dataset.i][2]); };
