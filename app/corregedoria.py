@@ -68,8 +68,11 @@ async def resumo_anual():
 
 
 @router.get("/universidades", summary="Comparativo de procedimentos por universidade federal")
-async def universidades(sigla: str | None = Query(None, description="Ex.: UFSCAR, UFABC")):
+async def universidades(sigla: str | None = Query(None, description="Ex.: UFABC. Padrão: só UFSCAR"),
+                        comparar: bool = Query(False, description="true = todas as universidades federais")):
     unis = _dados()["universidades"]
+    if not sigla and not comparar:
+        sigla = "UFSCAR"
     if sigla:
         unis = [u for u in unis if u["sigla"].lower() == sigla.lower()]
         if not unis:
@@ -78,8 +81,64 @@ async def universidades(sigla: str | None = Query(None, description="Ex.: UFSCAR
 
 
 @router.get("/ceaf", summary="Expulsões da Administração Federal (CEAF): contagem agregada")
-async def ceaf():
+async def ceaf(comparar: bool = Query(False, description="true = inclui totais do país e das universidades federais")):
     c = _dados().get("ceaf")
     if not c:
         raise HTTPException(404, "CEAF não coletado.")
-    return c
+    return c if comparar else {"data_arquivo": c["data_arquivo"], "ufscar": c["ufscar"]}
+
+
+def _taxas(a: list) -> dict:
+    n, inv, julg, dias, dn = a
+    return {"procedimentos": n, "investigados": inv, "taxa_julgamento": round(julg / n, 3) if n else None,
+            "dias_medio_julgamento": round(dias / dn) if dn else None}
+
+
+def _mediana(v: list[float]) -> float | None:
+    v = sorted(x for x in v if x is not None)
+    if not v:
+        return None
+    m = len(v) // 2
+    return round(v[m] if len(v) % 2 else (v[m - 1] + v[m]) / 2, 2)
+
+
+@router.get("/indicadores", summary="Indicadores de corregedoria da UFSCar vs. universidades federais")
+async def indicadores(ano: int | None = Query(None, description="Padrão: último ano completo (2022)"),
+                      comparar: bool = Query(False, description="true = inclui ranking e medianas das universidades federais")):
+    cor = _dados()
+    ano = ano or cor["ano_ultimo_completo"]
+    y = str(ano)
+    unis = cor["universidades"]
+    por_mil = {u["sigla"]: u["anos"][y][0] / u["servidores"] * 1000 for u in unis if y in u["anos"] and u["servidores"]}
+    uf = next((u for u in unis if u["sigla"] == "UFSCAR"), None)
+    if not uf or y not in uf["anos"]:
+        raise HTTPException(404, f"Sem procedimentos da UFSCar em {ano}.")
+    ordem = sorted(por_mil, key=por_mil.get, reverse=True)
+    sudeste = [por_mil[u["sigla"]] for u in unis if u["regiao"] == "Sudeste" and u["sigla"] in por_mil]
+
+    procs = [p for p in _procedimentos(cor) if p["ano"] == ano]
+    n = len(procs)
+    pen = {k: sum(p[k] for p in procs) for k in ("advertencias", "suspensoes", "expulsivas", "outras")}
+    res = {
+        "ano": ano,
+        "ufscar": {
+            **_taxas(uf["anos"][y]),
+            "procedimentos_por_1000_servidores": round(por_mil["UFSCAR"], 2),
+            "pct_pad": round(sum(p["tipo"] == "PAD" for p in procs) / n, 3) if n else None,
+            "penalidades": pen,
+            "penalidades_por_procedimento": round(sum(pen.values()) / n, 2) if n else None,
+        },
+        "ceaf": {k: v for k, v in (cor.get("ceaf") or {}).items() if k in ("data_arquivo", "ufscar")},
+        "serie_ufscar": [{"ano": int(a), **_taxas(v), "procedimentos_por_1000_servidores": round(v[0] / uf["servidores"] * 1000, 2)}
+                         for a, v in sorted(uf["anos"].items()) if int(a) <= cor["ano_ultimo_completo"]],
+        "nota": "Servidores = docentes + técnicos do Censo 2024 (denominador fixo). " + cor["nota"],
+    }
+    if comparar:
+        res["ufscar"]["posicao_ranking"] = f"{ordem.index('UFSCAR') + 1}º de {len(ordem)}"
+        res["referencia"] = {
+            "mediana_brasil_por_1000_servidores": _mediana(list(por_mil.values())),
+            "mediana_sudeste_por_1000_servidores": _mediana(sudeste),
+            "universidades_comparadas": len(por_mil),
+        }
+        res["ceaf"] = cor.get("ceaf")
+    return res

@@ -1,0 +1,27 @@
+{
+  "fonte": "Relatórios Anuais de Atividades da Auditoria Interna (RAINT) da UFSCar, publicados pelo Conselho Universitário",
+  "url": "https://www.auditoriainterna.ufscar.br",
+  "coletado_em": "2026-10-08",
+  "nota": "Números transcritos manualmente dos RAINT (PDF). Os relatórios têm períodos diferentes (2020 e 2021 são anuais; 2022-1, 2023-1 e 2025-1 cobrem o 1º semestre) e não foram localizados os de 2022 (anual), 2023 (anual), 2024 e 2025 (anual), por isso a série tem lacunas e não deve ser lida como evolução contínua.",
+  "relatorios": [
+    {"rotulo": "2020", "periodo": "01/01 a 31/12/2020", "tipo": "anual", "acoes_previstas": 13, "acoes_realizadas": 12, "recomendacoes_acompanhadas": 152, "recomendacoes_implementadas": 15, "recomendacoes_pendentes": 137, "horas_capacitacao": 143.5, "url": "https://www.soc.ufscar.br/consuni/2021/arquivos/consuni-248a-reuniao-ordinaria/raint-2020.pdf"},
+    {"rotulo": "2021", "periodo": "01/01 a 31/12/2021", "tipo": "anual", "acoes_previstas": 13, "acoes_realizadas": 11, "recomendacoes_acompanhadas": 152, "recomendacoes_implementadas": 24, "recomendacoes_pendentes": 128, "horas_capacitacao": 164, "url": "https://www.soc.ufscar.br/consuni/2022/arquivos/consuni-259/raint-2021.pdf"},
+    {"rotulo": "2022-1", "periodo": "01/01 a 30/06/2022", "tipo": "1º semestre", "acoes_previstas": null, "acoes_realizadas": null, "recomendacoes_acompanhadas": 142, "recomendacoes_implementadas": 12, "recomendacoes_pendentes": 130, "horas_capacitacao": 96, "url": "https://www.soc.ufscar.br/consuni/2022/arquivos/consuni-263/raint-2022-1.pdf"},
+    {"rotulo": "2023-1", "periodo": "01/01 a 30/06/2023", "tipo": "1º semestre", "acoes_previstas": null, "acoes_realizadas": null, "recomendacoes_acompanhadas": 141, "recomendacoes_implementadas": 6, "recomendacoes_pendentes": 135, "horas_capacitacao": 164, "url": "https://www.soc.ufscar.br/consuni/2023/arquivos/consuni-272/raint-2023-1.pdf"},
+    {"rotulo": "2025-1", "periodo": "01/01 a 30/06/2025", "tipo": "1º semestre", "acoes_previstas": 16, "acoes_realizadas": 4, "acoes_em_andamento": 11, "acoes_nao_iniciadas": 1, "recomendacoes_acompanhadas": 121, "recomendacoes_implementadas": 3, "recomendacoes_pendentes": 118, "recomendacoes_cgu_acompanhadas": 17, "comunicacoes_tcu": 11, "horas_capacitacao": 66, "url": "https://www.soc.ufscar.br/consuni/2025/arquivos/consuni-283/raint-2025-1.pdf"}
+  ],
+  "ecgu": {
+    "descricao": "Sistema da Secretaria Federal de Controle Interno da CGU para gerir a atividade de auditoria interna governamental, do planejamento ao monitoramento das recomendações. Antigo e-Aud. Uso restrito às unidades de auditoria interna (UAIG) do Poder Executivo Federal.",
+    "numeros_cgu": {"uaig_auditorias": 100, "uaig_apenas_monitoramento": 60, "uaig_enviaram_paint_raint": 212},
+    "publico": false,
+    "links": [
+      {"nome": "Página oficial do e-CGU", "url": "https://www.gov.br/cgu/pt-br/assuntos/auditoria-e-fiscalizacao/e-cgu"},
+      {"nome": "Perguntas frequentes do e-CGU", "url": "https://www.gov.br/cgu/pt-br/assuntos/auditoria-e-fiscalizacao/e-cgu/faq"},
+      {"nome": "Dados abertos da CGU", "url": "https://www.gov.br/cgu/pt-br/acesso-a-informacao/dados-abertos"},
+      {"nome": "Painéis da CGU", "url": "https://www.gov.br/cgu/pt-br/centrais-de-conteudo/paineis"},
+      {"nome": "Auditoria Interna da UFSCar (PAINT e RAINT)", "url": "https://www.auditoriainterna.ufscar.br"},
+      {"nome": "Plano de Integridade da UFSCar (CGU)", "url": "https://repositorio.cgu.gov.br/bitstream/1/46055/1/UFSCAR_Plano_de_Integridade_V1.pdf"},
+      {"nome": "Plano de Dados Abertos da UFSCar", "url": "https://dewebdev2teste.ufscar.br/acesso-a-informacao/dados-abertos-1/plano-de-dados-abertos-ufscar.pdf"}
+    ]
+  }
+}

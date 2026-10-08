@@ -14,7 +14,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
 const FAIXA = {Inexpressivo: C.bad, Iniciando: C.warn, Intermediário: C.blue, Aprimorado: C.ok};
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-const TABS = ['home', 'tcu', 'comp', 'iesgo', 'lai', 'ouv', 'cor'];
+const TABS = ['home', 'tcu', 'iesgo', 'lai', 'ouv', 'cor', 'integ', 'aud'];
 let D, charts = {}, csvStore = {}, tab = 'home';
 Chart.defaults.font.family = '"Open Sans",sans-serif';
 function themeCharts() { Chart.defaults.color = cv('--muted'); Chart.defaults.borderColor = cv('--border'); }
@@ -33,6 +33,29 @@ window.addEventListener('hashchange', render);
 
 /* ---------- utilitários de interface ---------- */
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 1800); }
+/* Rótulos de dados: desenha o valor em barras, linhas e fatias. Desliga com options.plugins.rotulos = false. */
+Chart.register({
+  id: 'rotulos',
+  afterDatasetsDraw(ch, _, opt) {
+    if (opt === false) return;
+    const tipo = ch.config.type, horiz = ch.options.indexAxis === 'y', ctx = ch.ctx, ds = ch.data.datasets;
+    if (tipo === 'line' && ds.length > 2) return;
+    const f = v => Number(v).toLocaleString('pt-BR', {maximumFractionDigits: Math.abs(v) < 10 && v % 1 ? 1 : 0});
+    ctx.save(); ctx.font = '600 10.5px system-ui, sans-serif'; ctx.fillStyle = Chart.defaults.color;
+    ds.forEach((d, i) => {
+      const meta = ch.getDatasetMeta(i); if (meta.hidden || meta.data.length > 40) return;
+      meta.data.forEach((el, k) => {
+        const v = d.data[k]; if (v == null || typeof v === 'object' || (tipo !== 'doughnut' && tipo !== 'pie' && v === 0 && tipo === 'bar')) return;
+        const t = f(v);
+        if (tipo === 'doughnut' || tipo === 'pie') { if (!v) return; const p = el.tooltipPosition(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.fillText(t, p.x, p.y); return; }
+        ctx.fillStyle = Chart.defaults.color;
+        if (horiz) { ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(t, el.x + 4, el.y); }
+        else { ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(t, el.x, el.y - 4); }
+      });
+    });
+    ctx.restore();
+  },
+});
 function chart(id, cfg) {
   charts[id]?.destroy();
   cfg.options = {maintainAspectRatio: false, ...cfg.options};
@@ -88,7 +111,7 @@ function fillSelect(el, opts, val, onChange) { const s = $(el), sig = opts.map(o
 
 /* ---------- carga ---------- */
 fetch('data/painel.json').then(r => { if (!r.ok) throw new Error(r.status === 404 ? 'Dados ainda não coletados. Rode: py -m etl.build' : 'Erro ' + r.status); return r.json(); })
-  .then(d => { D = d; $('#loading').remove(); $('#gerado').textContent = 'atualizado em ' + new Date(d.gerado_em).toLocaleDateString('pt-BR'); render(); })
+  .then(async d => { D = d; D.auditoria = await fetch('data/auditoria.json').then(r => r.ok ? r.json() : null).catch(() => null); $('#loading').remove(); $('#gerado').textContent = 'atualizado em ' + new Date(d.gerado_em).toLocaleDateString('pt-BR'); render(); })
   .catch(e => { $('#loading')?.remove(); const x = $('#err'); x.style.display = 'block'; x.textContent = e.message; });
 
 function render() {
@@ -97,8 +120,8 @@ function render() {
   const s = getS(); tab = TABS.includes(s.tab) ? s.tab : 'home';
   $$('#nav .tab').forEach(b => { const on = b.dataset.t === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
   $$('main > section').forEach(e => e.classList.toggle('on', e.id === tab));
-  document.title = ({home: 'Visão geral', tcu: 'Indicadores TCU', comp: 'Comparativo', iesgo: 'iESGo', lai: 'Acesso à Informação', ouv: 'Ouvidoria', cor: 'Corregedoria'})[tab] + ' · Painel UFSCar';
-  ({home, tcu, comp, iesgo, lai, ouv, cor})[tab](s);
+  document.title = ({home: 'Visão geral', tcu: 'Indicadores TCU', comp: 'Comparativo', iesgo: 'iESGo', lai: 'Acesso à Informação', ouv: 'Ouvidoria', cor: 'Corregedoria', integ: 'Integridade', aud: 'Auditoria Interna'})[tab] + ' · Painel UFSCar';
+  ({home, tcu, comp, iesgo, lai, ouv, cor, integ, aud})[tab](s);
 }
 
 /* ======================= VISÃO GERAL ======================= */
@@ -108,30 +131,30 @@ function home() {
   const ie = K?.iesgo?.resumo?.iESGo;
   if (ie) { const f = I.indices.find(x => x.sigla === 'iESGo').faixa; cards.push(kpi('iESGo 2024 (TCU)', pct(ie.ufscar), `${ie.Brasil.posicao}º de ${ie.Brasil.n} universidades federais · média ${pct(ie.Brasil.media)}`, {go: {tab: 'iesgo'}, x: `<span class="tag" style="background:${FAIXA[f]}">${f}</span>`})); }
   const R = K?.resumo?.[K.ano_referencia];
-  if (R) for (const [k, l] of [['iqcd', 'Qualificação docente (IQCD)'], ['capes', 'Conceito CAPES médio']]) cards.push(kpi(l, fmt(R[k].ufscar, 2), `${R[k].Brasil.posicao}º de ${R[k].Brasil.n} · média Brasil ${fmt(R[k].Brasil.media, 2)}`, {go: {tab: 'comp', met: k}}));
+  if (R) for (const [k, l] of [['iqcd', 'Qualificação docente (IQCD)'], ['capes', 'Conceito CAPES médio']]) cards.push(kpi(l, fmt(R[k].ufscar, 2), `${R[k].Brasil.posicao}º de ${R[k].Brasil.n} · média Brasil ${fmt(R[k].Brasil.media, 2)}`, {}));
   const cc = T?.indicadores.find(x => x.codigo === '9.1.2.1.1')?.serie; if (cc) cards.push(kpi('Custo corrente por aluno equivalente', 'R$ ' + fmt(cc['2025'], 0), `2024: R$ ${fmt(cc['2024'], 0)} (série ProPlan)`, {go: {tab: 'tcu'}}));
   if (L?.anos.length) { const u = L.anos.at(-1); cards.push(kpi(`Pedidos LAI ${u.ano}`, fmt(u.ufscar.pedidos, 0), `Tempo médio ${fmt(u.ufscar.tempo_medio_dias)} d (universidades: ${fmt(u.universidades_federais.tempo_medio_dias)} d)`, {go: {tab: 'lai'}})); }
   if (O) { const a = Math.max(...O.linhas.filter(r => r[3] === 0).map(r => r[0])), rs = O.linhas.filter(r => r[3] === 0 && r[0] === a), p = rs.filter(r => r[7] != null), ref = O.referencia[a]?.universidades_federais;
     cards.push(kpi(`Manifestações de Ouvidoria ${a}`, fmt(rs.length, 0), `${fmt(100 * mean(p.map(r => r[7])), 1)}% no prazo (universidades: ${fmt(ref?.pct_no_prazo)}%)`, {go: {tab: 'ouv'}})); }
   $('#homeKpis').innerHTML = cards.join('');
   if (ie) { $('#heroNum').textContent = pct(ie.ufscar); $('#heroLbl').textContent = `iESGo 2024 · ${ie.Brasil.posicao}º de ${ie.Brasil.n} universidades federais`; }
-  $('#quick').innerHTML = [['tcu', 'Indicadores TCU'], ['comp', 'Comparar universidades'], ['iesgo', 'iESGo'], ['lai', 'Acesso à Informação'], ['ouv', 'Ouvidoria']].map(([t, l]) => `<button data-q="${t}">${l}</button>`).join('');
+  $('#quick').innerHTML = [['tcu', 'Indicadores TCU'], ['iesgo', 'iESGo'], ['lai', 'Acesso à Informação'], ['ouv', 'Ouvidoria']].map(([t, l]) => `<button data-q="${t}">${l}</button>`).join('');
   $('#quick').onclick = e => { const b = e.target.closest('[data-q]'); if (b) go(b.dataset.q); };
   if (R) {
     const ks = Object.keys(K.metricas).filter(k => R[k]?.Brasil), pc = k => { const g = R[k].Brasil; return g.n > 1 ? 100 * (g.n - g.posicao) / (g.n - 1) : 50; };
     chart('cPerfil', {type: 'bar', data: {labels: ks.map(k => K.metricas[k].nome), datasets: [{data: ks.map(pc), backgroundColor: ks.map(k => pc(k) >= 66 ? C.base : pc(k) >= 33 ? C.sky : C.gray)}]},
-      options: {indexAxis: 'y', plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => `Posição ${R[ks[c.dataIndex]].Brasil.posicao}º de ${R[ks[c.dataIndex]].Brasil.n} (percentil ${fmt(c.parsed.x, 0)})`}}}, scales: {x: {min: 0, max: 100}, y: {ticks: {font: {size: 11}}}}, onClick: (e, el) => el[0] && go('comp', {met: ks[el[0].index]}), onHover: (e, el) => e.native.target.style.cursor = el.length ? 'pointer' : 'default'}});
+      options: {indexAxis: 'y', plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => `Posição ${R[ks[c.dataIndex]].Brasil.posicao}º de ${R[ks[c.dataIndex]].Brasil.n} (percentil ${fmt(c.parsed.x, 0)})`}}}, scales: {x: {min: 0, max: 100}, y: {ticks: {font: {size: 11}}}}}});
   }
   const ins = [];
   if (R) for (const [k, m] of Object.entries(K.metricas)) { const g = R[k]?.Brasil; if (!g || !m.melhor) continue; const t = g.posicao / g.n;
-    if (t <= 1 / 3) ins.push([1, `${m.nome}: <b>${g.posicao}º de ${g.n}</b> universidades federais (${fmt(R[k].ufscar, 2)}).`, {tab: 'comp', met: k}]);
-    else if (t > 2 / 3) ins.push([-1, `${m.nome}: <b>${g.posicao}º de ${g.n}</b> (${fmt(R[k].ufscar, 2)}; média ${fmt(g.media, 2)}).`, {tab: 'comp', met: k}]); }
+    if (t <= 1 / 3) ins.push([1, `${m.nome}: <b>${g.posicao}º de ${g.n}</b> universidades federais (${fmt(R[k].ufscar, 2)}).`, null]);
+    else if (t > 2 / 3) ins.push([-1, `${m.nome}: <b>${g.posicao}º de ${g.n}</b> (${fmt(R[k].ufscar, 2)}; média ${fmt(g.media, 2)}).`, null]); }
   if (I) for (const x of I.indices) { const t = x.posicao_ifes / x.n_ifes; if (!['iESGo', 'iGG', 'iES', 'Lid', 'Estr', 'Cont', 'iGestPessoas', 'iGestTI', 'iGestContrat', 'iGestOrcament'].includes(x.sigla)) continue;
     if (t <= 1 / 3) ins.push([1, `iESGo · ${x.nome}: <b>${x.posicao_ifes}º de ${x.n_ifes}</b> instituições de ensino (${pct(x.ufscar)}).`, {tab: 'iesgo', idx: x.sigla}]);
     else if (t > 2 / 3) ins.push([-1, `iESGo · ${x.nome}: <b>${x.posicao_ifes}º de ${x.n_ifes}</b> instituições de ensino (${pct(x.ufscar)}; média ${pct(x.media_ifes)}).`, {tab: 'iesgo', idx: x.sigla}]); }
   if (L?.anos.length) { const u = L.anos.at(-1); if (u.ufscar.pct_no_prazo != null && u.universidades_federais.pct_no_prazo != null) ins.push([u.ufscar.pct_no_prazo >= u.universidades_federais.pct_no_prazo ? 1 : -1, `LAI ${u.ano}: ${fmt(u.ufscar.pct_no_prazo)}% respondidos no prazo (universidades federais: ${fmt(u.universidades_federais.pct_no_prazo)}%).`, {tab: 'lai'}]); }
   ins.sort((a, b) => b[0] - a[0]);
-  $('#insights').innerHTML = ins.length ? ins.map((x, i) => `<div class="insight"><span class="dot" style="background:${x[0] > 0 ? C.ok : C.bad}"></span><span><b>${x[0] > 0 ? 'Destaque' : 'Atenção'}:</b> ${x[1]} <a data-i="${i}">ver</a></span></div>`).join('') : '<div class="empty">Sem dados suficientes.</div>';
+  $('#insights').innerHTML = ins.length ? ins.map((x, i) => `<div class="insight"><span class="dot" style="background:${x[0] > 0 ? C.ok : C.bad}"></span><span><b>${x[0] > 0 ? 'Destaque' : 'Atenção'}:</b> ${x[1]}${x[2] ? ` <a data-i="${i}">ver</a>` : ''}</span></div>`).join('') : '<div class="empty">Sem dados suficientes.</div>';
   $('#insights').onclick = e => { const a = e.target.closest('a[data-i]'); if (a) go(ins[+a.dataset.i][2].tab, ins[+a.dataset.i][2]); };
 }
 
@@ -377,3 +400,87 @@ function cor(s) {
   dtable('#tRGrp', [{label: 'Indicador', get: r => r.l, fmt: v => `<b>${v}</b>`}, {label: 'UFSCar', n: 1, get: r => uf?.[r.k], fmt: (v, r) => `<b>${fmt(v, r.d)}</b>`}, ...['SP', 'Sudeste', 'Brasil'].map(g => ({label: GR[g], n: 1, get: r => gm(grupos[g].filter(u => temDado(u, r.k)), r.k), fmt: (v, r) => `${fmt(v, r.d)}<div class="pos">UFSCar ${rk(grupos[g], r.k)}</div>`}))], rowsG, {sort: null});
   $('#srcCor').innerHTML = `Fontes: ${src({nome: R.fonte, url: R.url})} · ${src({nome: R.fonte_ceaf, url: R.url_ceaf})}. Servidores = docentes + técnicos-administrativos (INEP, Censo 2024) como denominador fixo; as médias dos grupos são médias simples entre universidades.`;
 }
+
+
+/* ======================= INTEGRIDADE (LAI + OUVIDORIA + CORREGEDORIA) ======================= */
+function integ() {
+  const L = D.cgu?.lai, O = D.cgu?.ouvidoria, R = D.cgu?.correicao;
+  if (!L && !O && !R) { $('#integKpis').innerHTML = '<div class="note">Dados da CGU não coletados.</div>'; return; }
+  const porAno = {};
+  const lin = a => porAno[a] ||= {ano: a};
+  (L?.anos || []).forEach(u => Object.assign(lin(u.ano), {lai: u.ufscar.pedidos, laiDias: u.ufscar.tempo_medio_dias}));
+  if (O) {
+    const g = {}; O.linhas.filter(r => r[3] === 0).forEach(r => (g[r[0]] ||= []).push(r));
+    for (const [a, rs] of Object.entries(g)) { const p = rs.filter(r => r[7] != null); Object.assign(lin(+a), {ouv: rs.length, ouvPrazo: p.length ? 100 * mean(p.map(r => r[7])) : null}); }
+  }
+  if (R) { const last = R.ano_ultimo_completo; for (let a = 2012; a <= last; a++) lin(a).cor = 0; R.linhas.filter(r => r[0] <= last).forEach(r => lin(r[0]).cor++); }
+  const anos = Object.values(porAno).sort((a, b) => a.ano - b.ano), ult = k => anos.filter(r => r[k] != null).at(-1);
+  const l = ult('lai'), o = ult('ouv'), c = ult('cor');
+  $('#integNota').innerHTML = '<b>Atenção:</b> cada frente tem sua própria cobertura de anos; o quadro mostra “—” onde não há dado. A corregedoria usa o extrato público do CGU-PAD, que é incompleto a partir de 2023.';
+  $('#integKpis').innerHTML = [
+    l && kpi(`Pedidos de acesso à informação ${l.ano}`, fmt(l.lai, 0), `Tempo médio de resposta ${fmt(l.laiDias)} dias`, {go: {tab: 'lai'}}),
+    o && kpi(`Manifestações de ouvidoria ${o.ano}`, fmt(o.ouv, 0), o.ouvPrazo != null ? `${fmt(o.ouvPrazo, 1)}% respondidas no prazo` : '', {go: {tab: 'ouv'}}),
+    c && kpi(`Procedimentos disciplinares ${c.ano}`, fmt(c.cor, 0), R.ceaf ? `Expulsões no CEAF (UFSCar): ${fmt(R.ceaf.ufscar, 0)}` : '', {go: {tab: 'cor'}}),
+  ].filter(Boolean).join('');
+  const ln = (lab, col, k) => ({label: lab, data: anos.map(r => r[k] ?? null), borderColor: col, backgroundColor: col, tension: .2, borderWidth: 2, pointRadius: 3, spanGaps: true});
+  const sa = anos.filter(r => r.lai != null || r.ouv != null);
+  chart('cIntSerie', {type: 'line', data: {labels: sa.map(r => r.ano), datasets: [{...ln('Pedidos LAI', C.base, 'lai'), data: sa.map(r => r.lai ?? null)}, {...ln('Manifestações de ouvidoria', C.sky, 'ouv'), data: sa.map(r => r.ouv ?? null)}]}, options: {scales: {y: {beginAtZero: true}}}});
+  const ca = anos.filter(r => r.cor != null);
+  chart('cIntCor', {type: 'bar', data: {labels: ca.map(r => r.ano), datasets: [{data: ca.map(r => r.cor), backgroundColor: C.base}]}, options: {plugins: {legend: {display: false}}}});
+  dtable('#tInteg', [{label: 'Ano', get: r => r.ano, fmt: v => `<b>${v}</b>`}, {label: 'Pedidos LAI', n: 1, get: r => r.lai, fmt: v => fmt(v, 0)}, {label: 'Tempo médio LAI (d)', n: 1, get: r => r.laiDias, fmt: v => fmt(v)},
+    {label: 'Manifestações', n: 1, get: r => r.ouv, fmt: v => fmt(v, 0)}, {label: '% no prazo', n: 1, get: r => r.ouvPrazo, fmt: v => fmt(v)}, {label: 'Procedimentos disciplinares', n: 1, get: r => r.cor, fmt: v => fmt(v, 0)}],
+    anos.slice().reverse(), {sort: null});
+  // indicadores detalhados (último ano de cada frente)
+  const ind = [], add = (fr, nome, ano, v, ref, dec, menor) => ind.push({fr, nome, ano, v, ref, dec, menor});
+  const lu = L?.anos.at(-1);
+  if (lu) { const u = lu.ufscar, f = lu.universidades_federais;
+    add('Acesso à informação', 'Respondidos no prazo (%)', lu.ano, u.pct_no_prazo, f.pct_no_prazo, 1);
+    add('Acesso à informação', 'Tempo médio de resposta (dias)', lu.ano, u.tempo_medio_dias, f.tempo_medio_dias, 1, 1);
+    add('Acesso à informação', 'Tempo mediano de resposta (dias)', lu.ano, u.tempo_mediano_dias, f.tempo_mediano_dias, 1, 1);
+    add('Acesso à informação', 'Pedidos prorrogados (%)', lu.ano, u.pct_prorrogado, null, 1, 1);
+    add('Acesso à informação', 'Acesso concedido (%)', lu.ano, u.pct_acesso_concedido, null, 1);
+    add('Acesso à informação', 'Recursos por 100 pedidos', lu.ano, u.recursos_por_100_pedidos, null, 1, 1); }
+  if (O && o) { const rs = O.linhas.filter(r => r[3] === 0 && r[0] === o.ano), ref = O.referencia[o.ano]?.universidades_federais, n = rs.length, m = k => { const v = rs.map(r => r[k]).filter(x => x != null); return v.length ? mean(v) : null; };
+    add('Ouvidoria', 'Tempo médio de resposta (dias)', o.ano, m(6), ref?.tempo_medio, 1, 1);
+    add('Ouvidoria', 'Respondidas no prazo (%)', o.ano, m(7) == null ? null : 100 * m(7), ref?.pct_no_prazo, 1);
+    add('Ouvidoria', 'Satisfação média (1 a 5)', o.ano, m(10), ref?.satisfacao, 1);
+    add('Ouvidoria', 'Manifestações concluídas (%)', o.ano, m(8) == null ? null : 100 * m(8), null, 1);
+    add('Ouvidoria', 'Reclamações (% do total)', o.ano, n ? 100 * rs.filter(r => r[2] === 2).length / n : null, null, 1, 1);
+    add('Ouvidoria', 'Denúncias (% do total)', o.ano, n ? 100 * rs.filter(r => r[5] === 1).length / n : null, null, 1); }
+  if (R && c) { const a = String(c.ano), us = R.universidades, uf = us.find(u => u.sigla === 'UFSCAR'), md = v => { v = v.filter(x => x != null).sort((p, q) => p - q); return v.length ? (v[Math.floor((v.length - 1) / 2)] + v[Math.floor(v.length / 2)]) / 2 : null; };
+    if (uf?.anos[a]) { const t = x => x.anos[a], pm = x => t(x) ? 1000 * t(x)[0] / x.servidores : null, pj = x => t(x)?.[0] ? 100 * t(x)[2] / t(x)[0] : null, dm = x => t(x)?.[4] ? t(x)[3] / t(x)[4] : null;
+      add('Corregedoria', 'Procedimentos por 1.000 servidores', c.ano, pm(uf), md(us.map(pm)), 0, 1);
+      add('Corregedoria', 'Procedimentos julgados (%)', c.ano, pj(uf), md(us.map(pj)), 1);
+      add('Corregedoria', 'Tempo médio até o julgamento (dias)', c.ano, dm(uf), md(us.map(dm)), 1, 1); }
+    const pr = R.linhas.filter(r => r[0] === c.ano), pad = pr.length ? 100 * pr.filter(r => R.tipos[r[1]] === 'PAD').length / pr.length : null;
+    add('Corregedoria', 'Procedimentos que são PAD (%)', c.ano, pad, null, 0);
+    add('Corregedoria', 'Penalidades por procedimento', c.ano, pr.length ? pr.reduce((s, r) => s + r[5] + r[6] + r[7] + r[8], 0) / pr.length : null, null, 0); }
+  const sit = r => r.v == null || r.ref == null || !r.dec || Math.abs(r.v - r.ref) < 1e-9 ? '—' : ((r.v < r.ref) === !!r.menor ? '<span style="color:var(--ok,#1a7f37)">▲ melhor</span>' : '<span style="color:var(--bad,#c0392b)">▼ pior</span>');
+  dtable('#tIntInd', [{label: 'Frente', get: r => r.fr}, {label: 'Indicador', get: r => r.nome, fmt: v => `<b>${v}</b>`}, {label: 'Ano', n: 1, get: r => r.ano}, {label: 'UFSCar', n: 1, get: r => r.v, fmt: v => `<b>${fmt(v, 1)}</b>`},
+    {label: 'Universidades federais', n: 1, get: r => r.ref, fmt: v => v == null ? '—' : fmt(v, 1)}, {label: 'Situação', get: r => r.ref == null ? '' : r.v < r.ref ? 'a' : 'b', fmt: (v, r) => sit(r)}], ind, {sort: null, search: true});
+  setCsv('integind', 'ufscar_indicadores_detalhados', ['Frente', 'Indicador', 'Ano', 'UFSCar', 'Universidades federais'], ind.map(r => [r.fr, r.nome, r.ano, r.v, r.ref]));
+  setCsv('integ', 'ufscar_integridade', ['Ano', 'Pedidos LAI', 'Tempo médio LAI (dias)', 'Manifestações de ouvidoria', '% no prazo', 'Procedimentos disciplinares'], anos.map(r => [r.ano, r.lai, r.laiDias, r.ouv, r.ouvPrazo, r.cor]));
+  $('#srcInteg').innerHTML = [L && src({nome: L.fonte, url: L.url}), O && src({nome: O.fonte, url: O.url}), R && src({nome: R.fonte, url: R.url})].filter(Boolean).join(' · ');
+}
+
+/* ======================= AUDITORIA INTERNA (RAINT) ======================= */
+function aud() {
+  const A = D.auditoria; if (!A) { $('#audKpis').innerHTML = '<div class="note">Dados de auditoria não encontrados (data/auditoria.json).</div>'; return; }
+  const R = A.relatorios, u = R.at(-1), lab = R.map(r => r.rotulo), pct = r => 100 * r.recomendacoes_implementadas / r.recomendacoes_acompanhadas;
+  $('#audNota').innerHTML = '<b>Atenção:</b> ' + esc(A.nota);
+  $('#audKpis').innerHTML = kpi(`Recomendações em acompanhamento (${u.rotulo})`, fmt(u.recomendacoes_acompanhadas, 0), `${fmt(u.recomendacoes_implementadas, 0)} implementadas · ${fmt(u.recomendacoes_pendentes, 0)} pendentes (${fmt(pct(u), 1)}% implementadas)`) +
+    kpi(`Ações do PAINT ${u.rotulo.slice(0, 4)}`, fmt(u.acoes_previstas, 0), `${u.acoes_realizadas} concluídas · ${u.acoes_em_andamento} em andamento · ${u.acoes_nao_iniciadas} não iniciada`) +
+    kpi('Recomendações da CGU acompanhadas', fmt(u.recomendacoes_cgu_acompanhadas, 0), `${u.comunicacoes_tcu} comunicações do TCU no semestre (${u.rotulo})`) +
+    kpi(`Capacitação (${u.rotulo})`, fmt(u.horas_capacitacao, 0) + ' h', `Maior valor da série: ${fmt(Math.max(...R.map(r => r.horas_capacitacao)), 0)} h`);
+  chart('cAudRec', {type: 'bar', data: {labels: lab, datasets: [{label: 'Implementadas', data: R.map(r => r.recomendacoes_implementadas), backgroundColor: C.base}, {label: 'Pendentes', data: R.map(r => r.recomendacoes_pendentes), backgroundColor: C.gray}]}, options: {scales: {x: {stacked: true}, y: {stacked: true}}}});
+  chart('cAudPct', {type: 'line', data: {labels: lab, datasets: [{label: '% implementadas', data: R.map(r => +pct(r).toFixed(1)), borderColor: C.base, backgroundColor: C.base, tension: .2, borderWidth: 2, pointRadius: 4}]}, options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true}}}});
+  chart('cAudCap', {type: 'bar', data: {labels: lab, datasets: [{data: R.map(r => r.horas_capacitacao), backgroundColor: C.sky}]}, options: {plugins: {legend: {display: false}}}});
+  const ra = R.filter(r => r.acoes_previstas != null);
+  chart('cAudAcoes', {type: 'bar', data: {labels: ra.map(r => r.rotulo), datasets: [{label: 'Previstas', data: ra.map(r => r.acoes_previstas), backgroundColor: C.gray}, {label: 'Concluídas', data: ra.map(r => r.acoes_realizadas), backgroundColor: C.base}]}});
+  dtable('#tAud', [{label: 'Relatório', get: r => r.rotulo, fmt: (v, r) => `<a href="${r.url}" target="_blank" rel="noopener"><b>${v}</b></a>`}, {label: 'Período', get: r => r.periodo}, {label: 'Ações previstas', n: 1, get: r => r.acoes_previstas, fmt: v => fmt(v, 0)},
+    {label: 'Ações concluídas', n: 1, get: r => r.acoes_realizadas, fmt: v => fmt(v, 0)}, {label: 'Recomendações', n: 1, get: r => r.recomendacoes_acompanhadas, fmt: v => fmt(v, 0)}, {label: 'Implementadas', n: 1, get: r => r.recomendacoes_implementadas, fmt: v => fmt(v, 0)},
+    {label: '% implementadas', n: 1, get: r => pct(r), fmt: v => fmt(v, 1)}, {label: 'Capacitação (h)', n: 1, get: r => r.horas_capacitacao, fmt: v => fmt(v, 0)}], R, {sort: null});
+  setCsv('aud', 'ufscar_auditoria_interna', ['Relatório', 'Período', 'Ações previstas', 'Ações concluídas', 'Recomendações em acompanhamento', 'Implementadas', 'Pendentes', 'Horas de capacitação'], R.map(r => [r.rotulo, r.periodo, r.acoes_previstas, r.acoes_realizadas, r.recomendacoes_acompanhadas, r.recomendacoes_implementadas, r.recomendacoes_pendentes, r.horas_capacitacao]));
+  $('#srcAud').innerHTML = `Fonte: ${src({nome: A.fonte, url: A.url})}. Coletado em ${A.coletado_em}.`;
+}
+

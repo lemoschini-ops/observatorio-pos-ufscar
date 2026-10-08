@@ -84,6 +84,14 @@ async def painel():
     return FileResponse(PAINEL, media_type="application/json")
 
 
+@app.get("/api/auditoria", tags=["painel"], summary="Auditoria interna da UFSCar (RAINT) e e-CGU")
+async def auditoria():
+    arq = PAINEL.parent / "auditoria.json"
+    if not arq.exists():
+        raise HTTPException(404, "data/auditoria.json não encontrado.")
+    return FileResponse(arq, media_type="application/json")
+
+
 @app.get("/info", tags=["info"])
 async def raiz():
     return {"orgao": ORGAO, "orgao_superior": ORGAO_SUPERIOR, "docs": "/docs", "chave_configurada": bool(API_KEY)}
