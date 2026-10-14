@@ -388,6 +388,9 @@ function programas() {
 }
 const CORC = { "7": "#be185d", "6": "#7c3aed", "5": "#2563eb", "4": "#38a1db", "3": "#94a3b8", "2": "#b08968", "1": "#b08968", A: "#0d9488" };
 const hc = c => `<i class="hc" style="background:${CORC[c] || "#94a3b8"}">${esc(c)}</i>`;
+// anos de existência: sempre pela data em que o painel é visualizado
+const idade = ini => (+ini ? new Date().getFullYear() - +ini : null);
+const selo = ini => { const n = idade(ini); return n == null ? "" : `<span class="selo" title="Existe desde ${esc(ini)}; contado até ${new Date().getFullYear()}"><b>${n < 1 ? "Novo" : n}</b>${n < 1 ? "" : `<small>${n === 1 ? "ano" : "anos"}</small>`}</span>`; };
 const campusDe = m => /BURI/i.test(m || "") ? "Lagoa do Sino (Buri)" : cap(m);
 const siteDe = cod => { const s = D.sites?.sites?.[cod]; return s ? { url: s.url, geral: s.status === "pagina_geral" } : { url: D.sites?.geral || "https://www.propg.ufscar.br/pt-br/pos-na-ufscar/programas", geral: true }; };
 const grauOk = g => nivelOk(g, S.grau);
@@ -409,6 +412,8 @@ ABAS.programas = el => {
   const ord = {
     nota: (a, b) => (notaQ(b) ?? -1) - (notaQ(a) ?? -1) || a.nome.localeCompare(b.nome, "pt"),
     nome: (a, b) => a.nome.localeCompare(b.nome, "pt"),
+    ini: (a, b) => (+a.anos[A].inicio || 9999) - (+b.anos[A].inicio || 9999) || a.nome.localeCompare(b.nome, "pt"),
+    inir: (a, b) => (+b.anos[A].inicio || 0) - (+a.anos[A].inicio || 0) || a.nome.localeCompare(b.nome, "pt"),
     mat: (a, b) => (ser(b, "mat") ?? -1) - (ser(a, "mat") ?? -1),
     tit: (a, b) => (ser(b, "tit") ?? -1) - (ser(a, "tit") ?? -1),
   }[S.ord];
@@ -426,9 +431,9 @@ ABAS.programas = el => {
     const rede = !sede(p);
     const st = siteDe(p.cod);
     return `<article class="ppg">
-      <div class="ppg-top"><span class="nota" style="background:${n != null ? CORC[n] : "var(--line)"};${n == null ? "color:var(--mut)" : ""}" title="Conceito CAPES 2025 (Quadrienal)">${n ?? "–"}</span>
+      <div class="ppg-top">${selo(r.inicio)}<span class="nota" style="background:${n != null ? CORC[n] : "var(--line)"};${n == null ? "color:var(--mut)" : ""}" title="Conceito CAPES 2025 (Quadrienal)">${n ?? "–"}</span>
         <div><h3><a class="ppg-link" href="${esc(st.url)}" target="_blank" rel="noopener" title="${st.geral ? "Abrir a página dos programas da UFSCar (ProPG)" : "Abrir o site do programa em ufscar.br"}">${esc(cap(r.nome))}</a></h3><small>${esc(cap(r.area || r.ga))} · ${esc(r.grau.replace("MESTRADO PROFISSIONAL", "Mestrado prof.").replace("DOUTORADO PROFISSIONAL", "Doutorado prof.").replace("MESTRADO/DOUTORADO", "Mestrado e doutorado").replace(/^MESTRADO$/, "Mestrado").replace(/^DOUTORADO$/, "Doutorado"))}</small></div></div>
-      <div class="ppg-tags"><span class="tag ${rede ? "assoc" : "sede"}">${rede ? "Rede · UFSCar associada" : "UFSCar" + (r.rede ? " · sede de rede" : "")}</span><span class="tag">${esc(rede ? "Coord.: " + r.ies : campusDe(r.mun))}</span></div>
+      <div class="ppg-tags"><span class="tag ${rede ? "assoc" : "sede"}">${rede ? "Rede · UFSCar associada" : "UFSCar" + (r.rede ? " · sede de rede" : "")}</span><span class="tag">${esc(rede ? "Coord.: " + r.ies : campusDe(r.mun))}</span>${r.inicio ? `<span class="tag" title="Ano de criação do programa">Criado em ${esc(r.inicio)}</span>` : ""}</div>
       <div class="ppg-ref"><span><b>Conceito 2025:</b> ${n ?? "sem nota"}${dif != null ? ` <span class="d ${dif > 0 ? "up" : dif < 0 ? "dn" : ""}">${dif > 0 ? "▲ +" : dif < 0 ? "▼ " : "= "}${dif}</span>` : ""}${q?.desat ? ' <span class="tag">doutorado a desativar</span>' : ""}</span>
         <span class="mut">${A}: ${hc(r.conc)}${ant != null ? ` · anterior ${ant}` : ""}</span></div>
       <div class="nums"><div><b>${fmt(mat)}</b><span>matric.</span></div><div><b>${fmt(tit)}</b><span>titulados</span></div><div><b>${fmt(perm)}</b><span>docentes perm.</span></div></div>
@@ -452,7 +457,7 @@ ABAS.programas = el => {
       <label>Ano<select id="pg-ano">${ANOS.map(a => `<option ${a === A ? "selected" : ""}>${a}</option>`).join("")}</select></label>
       <label>Buscar<input type="search" id="pg-q" placeholder="nome do programa" value="${esc(S.busca)}"></label>
       <label>Vínculo<select id="pg-v"><option value="">Todos</option><option value="sede" ${S.vinc === "sede" ? "selected" : ""}>UFSCar (${nSede})</option><option value="rede" ${S.vinc === "rede" ? "selected" : ""}>Em rede, associada (${nRede})</option></select></label>
-      <label>Ordenar por<select id="pg-o">${[["nota", "Conceito 2025"], ["nome", "Nome"], ["mat", "Matriculados"], ["tit", "Titulados"]].map(([v, t]) => `<option value="${v}" ${S.ord === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+      <label>Ordenar por<select id="pg-o">${[["nota", "Conceito 2025"], ["nome", "Nome"], ["ini", "Mais antigos"], ["inir", "Mais recentes"], ["mat", "Matriculados"], ["tit", "Titulados"]].map(([v, t]) => `<option value="${v}" ${S.ord === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
       <label>Agrupar por<select id="pg-g">${[["", "Sem agrupamento"], ["area", "Grande área"], ["nota", "Conceito 2025"]].map(([v, t]) => `<option value="${v}" ${S.grp === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
       <button class="btn" id="pg-csv">Baixar CSV</button>
     </div>
@@ -470,13 +475,13 @@ ABAS.programas = el => {
   $("#pg-ano").onchange = e => { S.ano = +e.target.value; $("#f-ano").value = S.ano; render(); };
   $("#pg-q").oninput = e => { S.busca = e.target.value; const pos = e.target.selectionStart; render(); const q = $("#pg-q"); q.focus(); q.setSelectionRange(pos, pos); };
   [["#pg-v", "vinc"], ["#pg-o", "ord"], ["#pg-g", "grp"]].forEach(([id, k]) => $(id).onchange = e => { S[k] = e.target.value; render(); });
-  $("#pg-csv").onclick = () => baixar(`programas_ufscar_${A}.csv`, csv([["codigo", "programa", "vinculo", "grande_area", "nivel", "municipio_ou_coordenacao", "conceito_2025", `conceito_${A}`, "matriculados", "titulados", "docentes_permanentes"],
-    ...lista.map(p => { const r = p.anos[A]; return [p.cod, r.nome, sede(p) ? "UFSCar" : "Rede (associada)", r.ga, r.grau, sede(p) ? campusDe(r.mun) : r.ies, notaQ(p) ?? "", r.conc, ser(p, "mat") ?? "", ser(p, "tit") ?? "", ser(p, "perm") ?? ""]; })]));
+  $("#pg-csv").onclick = () => baixar(`programas_ufscar_${A}.csv`, csv([["codigo", "programa", "vinculo", "grande_area", "nivel", "municipio_ou_coordenacao", "ano_criacao", "anos_existencia", "conceito_2025", `conceito_${A}`, "matriculados", "titulados", "docentes_permanentes"],
+    ...lista.map(p => { const r = p.anos[A]; return [p.cod, r.nome, sede(p) ? "UFSCar" : "Rede (associada)", r.ga, r.grau, sede(p) ? campusDe(r.mun) : r.ies, r.inicio ?? "", idade(r.inicio) ?? "", notaQ(p) ?? "", r.conc, ser(p, "mat") ?? "", ser(p, "tit") ?? "", ser(p, "perm") ?? ""]; })]));
 
   const H = todos.filter(p => areaOk(p.ultimo.ga) && grauOk(p.ultimo.grau)).sort((a, b) => a.nome.localeCompare(b.nome, "pt"));
   $("#pg-heat").className = "heat";
-  $("#pg-heat").innerHTML = `<thead><tr><th class="t">Programa</th>${ANOS.map(a => `<th>${String(a).slice(2)}</th>`).join("")}<th title="Conceito CAPES 2025 (Quadrienal)">2025</th></tr></thead><tbody>` +
-    H.map(p => `<tr data-id="${p.cod}"><td title="${esc(p.nome)}">${esc(cap(p.nome))}${p.papel === "sede" ? "" : ' <span class="tag assoc">rede</span>'}</td>${ANOS.map(a => { const r = p.anos[a]; return `<td title="${a}: ${r ? "conceito " + r.conc : "sem registro"}">${r ? hc(r.conc) : ""}</td>`; }).join("")}<td title="Conceito CAPES 2025">${notaQ(p) != null ? hc(String(notaQ(p))) : ""}</td></tr>`).join("") + "</tbody>";
+  $("#pg-heat").innerHTML = `<thead><tr><th class="t">Programa</th><th title="Ano de criação do programa">Início</th>${ANOS.map(a => `<th>${String(a).slice(2)}</th>`).join("")}<th title="Conceito CAPES 2025 (Quadrienal)">2025</th></tr></thead><tbody>` +
+    H.map(p => `<tr data-id="${p.cod}"><td title="${esc(p.nome)}">${esc(cap(p.nome))}${p.papel === "sede" ? "" : ' <span class="tag assoc">rede</span>'}</td><td>${esc(p.ultimo.inicio ?? "")}</td>${ANOS.map(a => { const r = p.anos[a]; return `<td title="${a}: ${r ? "conceito " + r.conc : "sem registro"}">${r ? hc(r.conc) : ""}</td>`; }).join("")}<td title="Conceito CAPES 2025">${notaQ(p) != null ? hc(String(notaQ(p))) : ""}</td></tr>`).join("") + "</tbody>";
   $$("#pg-heat tbody tr").forEach(tr => tr.onclick = () => abrirPrograma(tr.dataset.id));
 
   const propios = base.filter(sede), gU = GRUPOS[0];
@@ -497,7 +502,7 @@ function abrirPrograma(cod) {
   $("#m-corpo").innerHTML = `<h2>${esc(cap(p.nome))}</h2>
     <p><a class="btn" style="text-decoration:none;display:inline-block" href="${esc(siteDe(cod).url)}" target="_blank" rel="noopener">${siteDe(cod).geral ? "Página dos programas da UFSCar ↗" : "Site do programa ↗"}</a></p>
     <p><span class="tag ${p.papel === "sede" ? "sede" : "assoc"}">${p.papel === "sede" ? "UFSCar é a sede" : "UFSCar é associada"}</span> ${rede ? '<span class="tag">Programa em rede</span>' : ""}
-      <span class="tag">${esc(cap(ref.grau))}</span> <span class="tag">${esc(cap(ref.ga))}</span> <span class="tag">${esc(cap(ref.mun))}</span> ${u.inicio ? `<span class="tag">Início ${esc(u.inicio)}</span>` : ""}</p>
+      <span class="tag">${esc(cap(ref.grau))}</span> <span class="tag">${esc(cap(ref.ga))}</span> <span class="tag">${esc(cap(ref.mun))}</span> ${u.inicio ? `<span class="tag">Início ${esc(u.inicio)}</span> ${selo(u.inicio)}` : ""}</p>
     ${rede ? `<p class="sub">Coordenação: <b>${esc(u.ies)}</b>${u.associadas.length ? ` · Associadas: ${esc(u.associadas.join(", "))}` : ""}. Os números abaixo cobrem a rede inteira, não só a UFSCar.</p>` : ""}
     <div class="tl">${ANOS.map(a => `<i style="background:${p.anos[a] ? CORC[p.anos[a].conc] || "#94a3b8" : "var(--line)"}" title="${a}">${p.anos[a] ? p.anos[a].conc : "·"}</i>`).join("")}</div>
     <p class="sub">Conceito por ano (${ANOS[0]} a ${ANOS.at(-1)}).</p>
