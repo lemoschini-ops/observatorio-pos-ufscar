@@ -17,7 +17,7 @@ const cap = s => (s || "").toLowerCase().replace(/(^|[\s/(-])(\S)(\S*)/g, (m, p,
 const D = {}, Y = {}; let ANOS = [];
 const S = { rotulos: true, tab: "geral", univ: "fed", area: "", grau: "", sem: false, ano: 0, a0: 0, a1: 0,
   metric: "mat", modo: "idx", off: new Set(), sel: [U], rkMetric: "mat", rkModo: "abs",
-  busca: "", conc: "", mun: "", vinc: "", ord: "nota", grp: "", incRede: true, nvInd: "mat", nvGrupo: 0, nvNivel: "ME", qvin: "", qnota: "", lato: { sit: "Ativo", mod: "", area: "", camp: "", q: "" } };
+  busca: "", conc: "", mun: "", vinc: "", ord: "nota", grp: "", nvInd: "mat", nvGrupo: 0, nvNivel: "ME", qvin: "", qnota: "", lato: { sit: "Ativo", mod: "", area: "", camp: "", q: "" } };
 const charts = {};
 let memo = new Map();
 
@@ -40,8 +40,9 @@ async function carregar() {
 // ------------------------------------------------------------------- grupos
 function grupos() {
   const fed = S.univ === "fed";
-  // linhas rede = "S" são cópias dos programas em rede em que a UFSCar é associada: contam só para a UFSCar
-  const isU = r => (r.ies === U || r.ie === U || (r.redeU && S.incRede)) && (r.rede !== "S" || S.incRede);
+  // linhas rede = "S" são cópias dos programas em rede em que a UFSCar é associada: só a contagem de programas as usa
+  // (discentes e docentes dessas redes são da rede inteira e ficam fora, ver rows())
+  const isU = r => r.ies === U || r.ie === U || r.redeU;
   const ok = r => r.rede !== "S" && (!fed || r.jur === "FEDERAL") && !(S.sem && isU(r));
   const suf = (fed ? "federais" : "todas as IES") + (S.sem ? ", sem UFSCar" : "");
   return [
@@ -69,7 +70,7 @@ function nivelOk(grau, f) {
 let OV = null; // nível imposto pela aba "Por nível" (sobrepõe o filtro global; "" = todos)
 function rows(cube, ano, g, { area = true, grau = true } = {}) {
   const f = OV ?? S.grau;
-  return (Y[cube][ano] || []).filter(r => g.t(r) &&
+  return (Y[cube][ano] || []).filter(r => g.t(r) && (cube === "prog" || r.rede !== "S") &&
     !(area && S.area && GA.has(cube) && r.ga !== S.area) &&
     !(grau && f && GR.has(cube) && !nivelOk(r.grau, f)));
 }
@@ -441,7 +442,7 @@ ABAS.programas = el => {
   const corpo = chaves.map(k => `${k ? `<h2 class="sec">${esc(k)} <span class="sub" style="display:inline">(${grupos2[k].length})</span></h2>` : ""}<div class="ppg-grid">${grupos2[k].map(card).join("")}</div>`).join("") || '<p class="sub">Nenhum programa com os filtros atuais.</p>';
 
   el.innerHTML = `<h2 class="sec">Programas de pós-graduação da UFSCar</h2>
-    <p class="sub">Referência: <b>Conceito CAPES 2025</b> (Avaliação Quadrienal, resultado de 05/2026). Em <b>${A}</b> são <b>${base.length}</b> programas: <b>${nSede}</b> da UFSCar e <b>${nRede}</b> em rede com a UFSCar associada.${semNota ? ` ${semNota} sem nota na planilha da Quadrienal.` : ""} Nos programas em rede, matriculados, titulados e docentes são da rede inteira. Os totais da UFSCar somam os 4 programas em rede.</p>
+    <p class="sub">Referência: <b>Conceito CAPES 2025</b> (Avaliação Quadrienal, resultado de 05/2026). Em <b>${A}</b> são <b>${base.length}</b> programas: <b>${nSede}</b> da UFSCar e <b>${nRede}</b> em rede com a UFSCar associada.${semNota ? ` ${semNota} sem nota na planilha da Quadrienal.` : ""} Nos cartões dos programas em rede, matriculados, titulados e docentes são da rede inteira e não entram nos totais da UFSCar.</p>
     <div class="chips" style="margin-bottom:10px">${dist.map(([n, c]) => `<button class="chip ${S.conc === String(n) ? "on" : ""}" data-n="${n}"><i class="dot" style="background:${CORC[n]}"></i>Conceito ${n}: ${c}</button>`).join("")}${semNota ? `<button class="chip ${S.conc === "sem" ? "on" : ""}" data-n="sem">Sem nota: ${semNota}</button>` : ""}</div>
     <div class="campi" role="group" aria-label="Filtrar por campus"><span class="campi-t">Campus</span>
       <button class="chip ${!S.mun ? "on" : ""}" data-m="">Todos (${base.length})</button>
@@ -534,7 +535,6 @@ function programasQuadrienal() {
   Object.values(programas()).forEach(p => {
     const m = p.anos[ult]; if (!m) return;
     const rede = m.papel !== "sede";
-    if (rede && !S.incRede) return;
     const q = D.qmap[p.cod];
     const vinc = rede ? "Rede" : (m.rede ? "Associação" : "Sede");
     out.push({
@@ -750,7 +750,7 @@ ABAS.redes = el => {
       <div class="sub" style="margin:0">${u.associadas.length ? `${u.associadas.length} IES associadas${u.associadas.length < 14 ? ": " + esc(u.associadas.join(", ")) : ""}` : ""}</div></button>`;
   };
   el.innerHTML = `<h2 class="sec">Programas em rede com participação da UFSCar</h2>
-    <p class="sub">Redes nacionais e associações entre instituições. Os dados de discentes e docentes são da <b>rede inteira</b> (a CAPES não separa por instituição associada), por isso os totais da UFSCar que os incluem (opção ligada por padrão no filtro) refletem a rede inteira, não só a parte da UFSCar. Clique em um cartão para ver a trajetória.</p>
+    <p class="sub">Redes nacionais e associações entre instituições. Os dados de discentes e docentes são da <b>rede inteira</b> (a CAPES não separa por instituição associada), por isso esses números não entram nos totais da UFSCar (os programas entram só na contagem de programas). Clique em um cartão para ver a trajetória.</p>
     <h2 class="sec">UFSCar associada (${assoc.length})</h2>
     <div class="rede-grid">${assoc.map(card).join("") || '<p class="sub">Nenhum programa com os filtros atuais.</p>'}</div>
     <div class="grade" style="margin-top:14px"><article class="card"><h3>Matriculados nas redes em que a UFSCar é associada</h3><p class="sub">totais das redes, empilhado</p><div class="graf alto"><canvas id="r-g"></canvas></div></article></div>
@@ -762,36 +762,125 @@ ABAS.redes = el => {
 };
 
 // ---------- Comparar IES ----------
+const JUR = [["FEDERAL", "Federais"], ["ESTADUAL", "Estaduais"], ["MUNICIPAL", "Municipais"], ["PARTICULAR", "Privadas"]];
+const NAT = { FEDERAL: "Federal", ESTADUAL: "Estadual", MUNICIPAL: "Municipal", PARTICULAR: "Privada" };
+const jurSel = () => new Set(S.rkJur ?? (S.univ === "fed" ? ["FEDERAL"] : JUR.map(j => j[0])));
+const jurTxt = () => { const s = jurSel(); return s.size === 4 ? "todas as naturezas" : JUR.filter(j => s.has(j[0])).map(j => j[1].toLowerCase()).join(", "); };
 const RK = ["prog", "mat", "ing", "tit", "perm", "razao", "conc", "meses"];
 const paleta = () => [cssVar("--c-u"), cssVar("--c-se"), cssVar("--c-br"), "#6db3f2", "#0f4a85", "#c9a227", "#8aa4c8", "#5d6877"];
 ABAS.ranking = el => {
-  const lista = [...new Set(Y.disc_a[S.ano].map(r => r.ies).filter(Boolean))].filter(s => D.ies[s] && (S.univ === "all" || D.ies[s].jur === "FEDERAL"));
-  const gI = s => ({ k: "i_" + s, t: r => r.ies === s && (r.rede !== "S" || S.incRede) });
-  const a0 = S.a0;
-  const lin = lista.map(s => { const g = gI(s); return { id: s, v: [s, D.ies[s].uf, val("prog", g, S.ano), val("mat", g, S.ano), pct(val("mat", g, S.ano) - val("mat", g, a0), val("mat", g, a0)), val("tit", g, S.ano), val("perm", g, S.ano), val("razao", g, S.ano), val("conc", g, S.ano), val("meses", g, S.ano)] }; }).filter(l => l.v[2] || l.v[3]);
+  const ref = S.a1, a0 = S.a0;
+  const todas = [...new Set(Y.disc_a[ref].map(r => r.ies).filter(Boolean))].filter(s => D.ies[s]);
+  const jurs = jurSel();
+  const lista = todas.filter(s => jurs.has(D.ies[s].jur) || S.sel.includes(s));
+  const gI = s => ({ k: "i_" + s, t: r => r.ies === s });
+  const lin = lista.map(s => { const g = gI(s); return { id: s, v: [s, D.ies[s].uf, NAT[D.ies[s].jur] ?? "", val("prog", g, ref), val("mat", g, ref), pct(val("mat", g, ref) - val("mat", g, a0), val("mat", g, a0)), val("tit", g, ref), val("perm", g, ref), val("razao", g, ref), val("conc", g, ref), val("meses", g, ref)] }; }).filter(l => l.v[3] || l.v[4]);
   S.sel = S.sel.filter(s => lista.includes(s)); if (!S.sel.length) S.sel = [U];
-  el.innerHTML = `<h2 class="sec">Instituições do Sudeste (${S.univ === "fed" ? "federais" : "todas"})</h2>
-    <p class="sub">Dados de ${S.ano}; a variação compara com ${a0}. Clique nas linhas para escolher até 6 instituições e compará-las no gráfico.</p>
+  const outras = todas.filter(s => s !== U).sort((a, b) => a.localeCompare(b, "pt"));
+  const par = S.sel.find(s => s !== U) || "";
+  const optAnos = (v) => ANOS.map(a => `<option ${a === v ? "selected" : ""}>${a}</option>`).join("");
+  el.innerHTML = `<h2 class="sec">Instituições do Sudeste (${jurTxt()})</h2>
+    <p class="sub">Janela de comparação: <b>${a0}–${ref}</b>. Os indicadores da tabela são de ${ref}; a variação compara com ${a0}. Escolha uma instituição para comparar com a UFSCar ou clique nas linhas da tabela para incluir até 6 no gráfico.</p>
     <div class="card"><div class="controles">
+      <label>Natureza das IES<span id="k-jur" class="chips-row">${JUR.map(([j, n]) => `<button type="button" class="chip ${jurs.has(j) ? "on" : ""}" data-j="${j}">${n}</button>`).join("")}<button type="button" class="chip" data-p="pub">Públicas</button><button type="button" class="chip" data-p="all">Todas</button></span></label>
+      <label>Comparar a UFSCar com<select id="k-ies"><option value="">Escolha uma IES</option>${JUR.map(([j, n]) => `<optgroup label="${n}">${outras.filter(s => D.ies[s].jur === j).map(s => `<option value="${esc(s)}" ${s === par ? "selected" : ""}>${esc(s)} – ${esc(cap(D.ies[s].nome))}</option>`).join("")}</optgroup>`).join("")}</select></label>
       <label>Indicador<select id="k-met">${RK.map(k => `<option value="${k}" ${k === S.rkMetric ? "selected" : ""}>${M[k].t}</option>`).join("")}</select></label>
+      <label>De<select id="k-a0">${optAnos(a0)}</select></label>
+      <label>Até<select id="k-a1">${optAnos(ref)}</select></label>
       <label>Visualização<span class="seg" id="k-modo"><button data-v="abs" class="${S.rkModo === "abs" ? "on" : ""}">Valores</button><button data-v="idx" class="${S.rkModo === "idx" ? "on" : ""}">Índice</button></span></label></div>
       ${aviso(S.rkMetric)}
       <div class="leg" id="k-leg"></div><div class="graf alto"><canvas id="k-g"></canvas></div></div>
-    <h2 class="sec">Ranking</h2><div class="tabela-wrap"><table id="k-tab"></table></div>`;
+    <h2 class="sec">Ranking</h2><div class="tabela-wrap"><table id="k-tab"></table></div>
+    <div id="k-area"></div>`;
   const draw = () => {
     const k = S.rkMetric, anos = anosRange(), idx = S.rkModo === "idx" && M[k].kind === "soma";
     $("#k-leg").innerHTML = S.sel.map((s, i) => `<button data-s="${s}" title="Remover"><i class="dot" style="background:${paleta()[i]}"></i>${esc(s)} ×</button>`).join("");
     $$("#k-leg button").forEach(b => b.onclick = () => { S.sel = S.sel.filter(x => x !== b.dataset.s); if (!S.sel.length) S.sel = [U]; draw(); marca(); });
     destruirUm("k-g");
     grafico("k-g", "line", anos.map(String), S.sel.map((s, i) => { const v = serieDe(k, gI(s), anos); return linha(s, paleta()[i], idx ? v.map(x => v[0] ? 100 * x / v[0] : null) : v, s === U); }), { suf: M[k].suf, dec: idx ? 1 : M[k].dec, legend: true });
+    $("#k-ies").value = S.sel.find(s => s !== U) || "";
   };
   const marca = () => $$("#k-tab tbody tr").forEach(tr => tr.classList.toggle("sel", S.sel.includes(tr.dataset.id)));
-  tabela($("#k-tab"), [{ h: "IES", t: 1 }, { h: "UF", t: 1 }, { h: "Programas" }, { h: "Matriculados", f: v => fmt(v) }, { h: `Δ matric. vs ${a0}`, f: v => v == null ? "–" : `<span class="d ${v > 0 ? "up" : v < 0 ? "dn" : ""}">${v > 0 ? "+" : ""}${fmt(v, 1)}%</span>` }, { h: "Titulados", f: v => fmt(v) }, { h: "Docentes perm.", f: v => fmt(v) }, { h: "Disc./docente", f: v => fmt(v, 1) }, { h: "% conc. 5–7", f: v => fmt(v, 1) }, { h: "Meses p/ titular", f: v => fmt(v, 1) }],
-    lin, { ordem: 3, desc: true, destaque: l => l.id === U ? "u" : "", aoClicar: s => { S.sel = S.sel.includes(s) ? S.sel.filter(x => x !== s) : [...S.sel, s].slice(-6); if (!S.sel.length) S.sel = [U]; draw(); marca(); } });
+  tabela($("#k-tab"), [{ h: "IES", t: 1 }, { h: "UF", t: 1 }, { h: "Natureza", t: 1 }, { h: "Programas" }, { h: "Matriculados", f: v => fmt(v) }, { h: `Δ matric. vs ${a0}`, f: v => v == null ? "–" : `<span class="d ${v > 0 ? "up" : v < 0 ? "dn" : ""}">${v > 0 ? "+" : ""}${fmt(v, 1)}%</span>` }, { h: "Titulados", f: v => fmt(v) }, { h: "Docentes perm.", f: v => fmt(v) }, { h: "Disc./docente", f: v => fmt(v, 1) }, { h: "% conc. 5–7", f: v => fmt(v, 1) }, { h: "Meses p/ titular", f: v => fmt(v, 1) }],
+    lin, { ordem: 4, desc: true, destaque: l => l.id === U ? "u" : "", aoClicar: s => { S.sel = S.sel.includes(s) ? S.sel.filter(x => x !== s) : [...S.sel, s].slice(-6); if (!S.sel.length) S.sel = [U]; draw(); marca(); } });
+  $$("#k-jur button").forEach(b => b.onclick = () => { const p = b.dataset.p, cur = jurSel(); let nx; if (p) nx = p === "all" ? JUR.map(j => j[0]) : ["FEDERAL", "ESTADUAL", "MUNICIPAL"]; else { cur.has(b.dataset.j) ? cur.delete(b.dataset.j) : cur.add(b.dataset.j); nx = [...cur]; } if (nx.length) { S.rkJur = nx; render(); } });
   $("#k-met").onchange = e => { S.rkMetric = e.target.value; render(); };
+  $("#k-ies").onchange = e => { S.sel = e.target.value ? [U, e.target.value] : [U]; draw(); marca(); };
+  $("#k-a0").onchange = e => { S.a0 = Math.min(+e.target.value, S.a1); render(); };
+  $("#k-a1").onchange = e => { S.a1 = Math.max(+e.target.value, S.a0); render(); };
   $$("#k-modo button").forEach(b => b.onclick = () => { S.rkModo = b.dataset.v; render(); });
   draw(); marca();
+  comparaAreas($("#k-area"));
 };
+
+// ---------- Comparação por área de avaliação da CAPES ----------
+// Base: Avaliação Quadrienal (todos os PPGs do país, com área de avaliação e IES). Matriculados, titulados e docentes
+// por PPG só existem para a UFSCar (série por programa); para as demais IES a base agregada não traz a área de avaliação.
+function comparaAreas(el) {
+  const ref = S.a1, a0 = S.a0, gU = GRUPOS[0];
+  const ativos = D.q.filter(r => !r.desat && nivelOk(r.grau, S.grau));
+  const areasU = {};
+  ativos.filter(gU.t).forEach(r => { areasU[r.area] = (areasU[r.area] || 0) + 1; });
+  const areas = Object.keys(areasU).sort((a, b) => a.localeCompare(b, "pt"));
+  if (!areas.length) { el.innerHTML = `<h2 class="sec">Comparação por área de avaliação</h2><p class="sub">Nenhum programa da UFSCar com os filtros atuais.</p>`; return; }
+  if (!areas.includes(S.arArea)) S.arArea = areas.includes("INTERDISCIPLINAR") ? "INTERDISCIPLINAR" : areas[0];
+  const naArea = ativos.filter(r => r.area === S.arArea);
+  const fed = S.univ === "fed";
+  const jurs = jurSel();
+  const univ = naArea.filter(r => jurs.has(r.jur) || gU.t(r));
+  const iesDe = r => r.redeU ? U : r.ies;
+  const ies = [...new Set(univ.map(iesDe))].sort((a, b) => a.localeCompare(b, "pt"));
+  if (S.arIes && !ies.includes(S.arIes)) S.arIes = "";
+  const gs = GRUPOS.map(g => ({ g, rs: naArea.filter(r => g.t(r)) }));
+  const f1 = v => v == null ? "–" : fmt(v, 1), f2 = v => v == null ? "–" : fmt(v, 2);
+  const dl = v => v == null ? "–" : `<span class="d ${v > 0 ? "up" : v < 0 ? "dn" : ""}">${v > 0 ? "+" : ""}${fmt(v, 1)}%</span>`;
+  const st = gs.map(({ rs }) => ({ rs, s: qStats(rs), dout: pct(rs.filter(r => /DOUTORADO/.test(r.grau)).length, rs.length), prof: pct(rs.filter(r => /PROFISSIONAL/.test(r.grau)).length, rs.length), c3: pct(rs.filter(r => r.nota <= 3).length, rs.length), c4: pct(rs.filter(r => r.nota === 4).length, rs.length), c5: pct(rs.filter(r => r.nota === 5).length, rs.length), cmax: rs.length ? Math.max(...rs.map(r => r.nota)) : null, ies: new Set(rs.map(iesDe)).size }));
+  const IND = [["Programas", s => s.s.n, fmt], ["Instituições com programa na área", s => s.ies, fmt], ["Nota média (Quadrienal 2025)", s => s.s.media, f2], ["Maior nota", s => s.cmax, fmt], ["% com nota 3 ou menos", s => s.c3, f1], ["% com nota 4", s => s.c4, f1], ["% com nota 5", s => s.c5, f1], ["% com nota 6–7", s => s.s.c67, f1], ["% com nota 5–7", s => s.s.c57, f1], ["% com doutorado (acad. ou prof.)", s => s.dout, f1], ["% profissionais", s => s.prof, f1], ["% que subiram de nota", s => pct(s.s.sobe, s.s.cmp), f1], ["% que mantiveram a nota", s => pct(s.s.igual, s.s.cmp), f1], ["% que caíram de nota", s => pct(s.s.cai, s.s.cmp), f1], ["% 5–7 no ciclo anterior", s => s.s.ant57, f1]];
+  // PPGs da UFSCar na área, com os indicadores do período escolhido
+  const ser = (cod, a) => D.serie[cod]?.[a];
+  const dosU = naArea.filter(r => r.ies === U && !r.redeU).sort((a, b) => b.nota - a.nota || a.nome.localeCompare(b.nome, "pt"));
+  const tot = naArea.length;
+  const linU = dosU.map(r => {
+    const s1 = ser(r.cod, ref) || {}, s0 = ser(r.cod, a0) || {};
+    const rk = 1 + naArea.filter(x => x.nota > r.nota).length;
+    return { id: r.cod, v: [cap(r.nome), r.nivel, isNum(r.ant) ? +r.ant : (r.ant || null), r.nota, rk, s1.mat ?? null, s0.mat ? pct((s1.mat ?? 0) - s0.mat, s0.mat) : null, s1.ing ?? null, s1.tit ?? null, s1.des ?? null, s1.perm ?? null, s1.perm ? s1.mat / s1.perm : null, s1.tit ? s1.meses / s1.tit : null, s1.mat ? pct(s1.estr || 0, s1.mat) : null, s1.doc ? pct(s1.dr || 0, s1.doc) : null] };
+  });
+  // IES da área
+  const porIes = {};
+  univ.forEach(r => (porIes[iesDe(r)] ??= []).push(r));
+  const linI = Object.entries(porIes).map(([s, rs]) => { const q = qStats(rs); return { id: s, v: [s, D.ies[s]?.uf || rs[0].uf || "", rs.length, q.media, Math.max(...rs.map(r => r.nota)), q.c57, q.c67, q.sobe, q.cai, pct(rs.filter(r => /DOUTORADO/.test(r.grau)).length, rs.length)] }; });
+  // PPGs da área (todas as IES do universo, ou só da IES escolhida)
+  const lista = univ.filter(r => !S.arIes || iesDe(r) === S.arIes);
+  const linP = lista.map(r => ({ id: r.cod, v: [cap(r.nome), iesDe(r), r.uf, r.nivel, isNum(r.ant) ? +r.ant : (r.ant || null), r.nota, isNum(r.ant) ? r.nota - +r.ant : null, r.n1 ?? null, r.n2 ?? null] }));
+  const nota = v => v == null ? "–" : hc(String(v));
+  const dn = v => v == null ? "–" : `<span class="d ${v > 0 ? "up" : v < 0 ? "dn" : ""}">${v > 0 ? "+" : ""}${v}</span>`;
+  el.innerHTML = `<h2 class="sec">Comparação por área de avaliação da CAPES</h2>
+    <p class="sub">Compara os PPGs da UFSCar com os demais PPGs e IES da mesma <b>área de avaliação</b>, com os conceitos da Avaliação Quadrienal 2025 (resultado de 05/2026, sujeito a recursos) e as IES da natureza escolhida acima (${jurTxt()}${S.sem ? ", sem a UFSCar" : ""}); os grupos Sudeste e Brasil seguem o filtro “Universo de comparação”. Matriculados, titulados e docentes por PPG só existem para a UFSCar (aparecem na tabela dos PPGs da UFSCar, no período ${a0}–${ref}); para as outras IES a CAPES agregada não traz a área de avaliação.</p>
+    <div class="card"><div class="controles">
+      <label>Área de avaliação<select id="a-area">${areas.map(a => `<option value="${esc(a)}" ${a === S.arArea ? "selected" : ""}>${esc(cap(a))} (${areasU[a]})</option>`).join("")}</select></label>
+      <label>Ver PPGs da IES<select id="a-ies"><option value="">Todas as IES da área</option>${ies.map(s => `<option value="${esc(s)}" ${s === S.arIes ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label></div>
+      <div class="tabela-wrap"><table id="a-ind"></table></div></div>
+    <article class="card" style="margin-top:14px"><h3>Distribuição das notas na área</h3><p class="sub">% de programas por nota</p><div class="graf"><canvas id="a-g"></canvas></div></article>
+    <h3 class="sec">PPGs da UFSCar nesta área (${dosU.length})</h3>
+    <p class="sub">Indicadores no período ${a0}–${ref}; posição entre os ${tot} programas da área no país.</p>
+    <div class="tabela-wrap"><table id="a-ufscar"></table></div>
+    <h3 class="sec">IES da área (${linI.length})</h3><p class="sub">Clique em uma IES para listar seus PPGs.</p>
+    <div class="tabela-wrap"><table id="a-ies-t"></table></div>
+    <h3 class="sec">PPGs da área${S.arIes ? " em " + esc(S.arIes) : ""} (${linP.length})</h3>
+    <div class="tabela-wrap"><table id="a-ppg"></table></div>`;
+  tabela($("#a-ind"), [{ h: "Indicador", t: 1 }, ...st.map((s, i) => ({ h: gs[i].g.nome, f: (v, l) => l.f(v) }))],
+    IND.map(([nome, fn, f], i) => ({ id: i, f, v: [nome, ...st.map(fn)] })), { ordem: -1 });
+  const dsN = ["≤3", "4", "5", "6", "7"], cnt = (rs, n) => rs.filter(r => n === 3 ? r.nota <= 3 : r.nota === n).length;
+  grafico("a-g", "bar", dsN, gs.map(({ g, rs }) => barra(g.nome, cssVar(g.cor), [3, 4, 5, 6, 7].map(n => pct(cnt(rs, n), rs.length)))), { suf: "%", dec: 1, legend: true });
+  tabela($("#a-ufscar"), [{ h: "Programa", t: 1 }, { h: "Nível", t: 1 }, { h: "Nota anterior", f: nota }, { h: "Nota 2025", f: nota }, { h: "Posição na área", f: v => `${v}º de ${tot}` }, { h: `Matric. ${ref}`, f: v => fmt(v) }, { h: `Δ vs ${a0}`, f: dl }, { h: "Ingress.", f: v => fmt(v) }, { h: "Titulados", f: v => fmt(v) }, { h: "Deslig./aband.", f: v => fmt(v) }, { h: "Docentes perm.", f: v => fmt(v) }, { h: "Disc./docente", f: f1 }, { h: "Meses p/ titular", f: f1 }, { h: "% estrang.", f: f1 }, { h: "% docentes doutores", f: f1 }],
+    linU, { ordem: 3, desc: true, aoClicar: c => abrirPrograma(c) });
+  tabela($("#a-ies-t"), [{ h: "IES", t: 1 }, { h: "UF", t: 1 }, { h: "Programas" }, { h: "Nota média", f: f2 }, { h: "Maior nota", f: v => fmt(v) }, { h: "% 5–7", f: f1 }, { h: "% 6–7", f: f1 }, { h: "Subiram", f: v => fmt(v) }, { h: "Caíram", f: v => fmt(v) }, { h: "% c/ doutorado", f: f1 }],
+    linI, { ordem: 3, desc: true, destaque: l => l.id === U ? "u" : "", aoClicar: s => { S.arIes = s; render(); } });
+  tabela($("#a-ppg"), [{ h: "Programa", t: 1 }, { h: "IES", t: 1 }, { h: "UF", t: 1 }, { h: "Nível", t: 1 }, { h: "Nota anterior", f: nota }, { h: "Nota 2025", f: nota }, { h: "Variação", f: dn }, { h: "Nota mestrado", f: nota }, { h: "Nota doutorado", f: nota }],
+    linP, { ordem: 5, desc: true, destaque: l => l.v[1] === U ? "u" : "" });
+  $("#a-area").onchange = e => { S.arArea = e.target.value; S.arIes = ""; render(); };
+  $("#a-ies").onchange = e => { S.arIes = e.target.value; render(); };
+}
 function destruirUm(id) { charts[id]?.destroy(); delete charts[id]; }
 
 // ---------- Metodologia ----------
@@ -803,7 +892,7 @@ ABAS.sobre = el => {
     <li><b>Taxa de conclusão</b> = titulados ÷ (titulados + desligados + abandonos) no ano. É um indicador de fluxo anual, não de coorte.</li>
     <li><b>Docentes</b> são vínculos docente–programa; a razão discente/docente usa matriculados e docentes permanentes. Para docentes, o nível é o do programa em que atuam (um programa de mestrado e doutorado conta nos dois níveis).</li>
     <li><b>Conceito 5 a 7</b>: participação entre os programas com conceito 3 a 7; programas com conceito “A” (novos) ficam fora do denominador.</li>
-    <li><b>Programas em rede:</b> programas com “em rede = sim” na base de Programas em que a UFSCar é a instituição sede ou consta entre as associadas. Os <b>4 programas em que a UFSCar é associada</b> (PROFMAT, PROFIS, PROEF e PROF-FILO) entram <b>sempre</b> nos totais da UFSCar (programas, discentes, docentes, conceitos), somados aos programas próprios, conforme a opção ligada por padrão no filtro. A CAPES registra os discentes e docentes desses programas sob o código do programa coordenador, sem distinguir a instituição de cada pessoa; portanto, nesses 4 programas os números são os da <b>rede inteira</b> e elevam bastante os totais da UFSCar. Desmarque “Incluir os 4 programas em rede” para ver só os programas próprios. No Sudeste e no Brasil esses programas ficam apenas na coordenadora (sem dupla contagem), de modo que o peso da UFSCar nessas comparações pode ficar superestimado.</li>
+    <li><b>Programas em rede:</b> programas com “em rede = sim” na base de Programas em que a UFSCar é a instituição sede ou consta entre as associadas. Os <b>4 programas em que a UFSCar é associada</b> (PROFMAT, PROFIS, PROEF e PROF-FILO) entram na contagem de programas e nos conceitos da UFSCar (56 próprios + 4 em rede = 60). A CAPES registra os discentes e docentes desses programas sob o código do programa coordenador, sem distinguir a instituição de cada pessoa; por isso, discentes, docentes, titulados e demais indicadores da UFSCar consideram apenas os programas próprios. Nos cartões de cada programa em rede os números são os da rede inteira. No Sudeste e no Brasil esses programas ficam apenas na coordenadora (sem dupla contagem).</li>
     <li><b>Indicadores por nível:</b> a aba “Por nível” separa mestrado acadêmico, mestrado profissional, doutorado acadêmico e doutorado profissional. Discentes são contados pelo nível em que estão matriculados; cursos e docentes, pelos programas que oferecem o nível (programa de mestrado e doutorado entra nos dois). O filtro “Nível” da barra superior também aceita cada nível isolado e vale para programas, discentes e docentes.</li>
     <li>Os indicadores de faixa etária, nacionalidade, bolsa de produtividade e titulação no exterior usam cubos sem o detalhe de grande área, então o filtro de área não os afeta (o painel avisa quando isso ocorre).</li>
     <li><b>Pós-Graduação Lato sensu:</b> cursos de especialização da UFSCar no cadastro do <a href="https://emec.mec.gov.br/" target="_blank" rel="noopener">e-MEC</a>, obtidos pela API Olinda do MEC (<code>etl/lato_sensu.py</code>; mesma fonte do repositório e-mec). É o retrato do cadastro na data da coleta, sem série histórica; “inativo” indica curso ou turma não mais ofertado. Cada turma pode constar como curso separado. Não há dados de matrículas ou concluintes de lato sensu nessa fonte.</li>
@@ -836,9 +925,7 @@ function notaRede() {
   const ps = Object.values(programas()).filter(p => p.anos[S.ano]);
   const nS = ps.filter(p => p.anos[S.ano].papel === "sede").length, nR = ps.length - nS;
   el.hidden = false;
-  el.innerHTML = S.incRede
-    ? `<b>Totais da UFSCar em ${S.ano}:</b> ${nS} programas próprios + ${nR} em rede (UFSCar associada) = ${nS + nR}. Nos programas em rede, discentes e docentes são os da <b>rede inteira</b> (a CAPES não separa por instituição); desmarque a opção no filtro para ver só os programas próprios.`
-    : `<b>Totais da UFSCar em ${S.ano}:</b> somente os ${nS} programas próprios (os ${nR} em rede estão fora da soma).`;
+  el.innerHTML = `<b>Programas da UFSCar em ${S.ano}:</b> ${nS} próprios + ${nR} em rede (UFSCar associada) = ${nS + nR}. Discentes, docentes e demais indicadores consideram só os ${nS} programas próprios, porque nos programas em rede a CAPES não separa as pessoas por instituição e os números são da rede inteira.`;
 }
 function ir(tab) { S.tab = tab; history.replaceState(null, "", "#" + tab); render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
 function csvGrafico(id, titulo) {
@@ -859,7 +946,7 @@ function decorarFiguras() {
   });
 }
 function sincFiltros() {
-  $("#f-area").value = S.area; $("#f-grau").value = S.grau; $("#f-sem").checked = S.sem; $("#f-rede").checked = S.incRede; $("#f-ano").value = S.ano;
+  $("#f-area").value = S.area; $("#f-grau").value = S.grau; $("#f-sem").checked = S.sem; $("#f-ano").value = S.ano;
   $$("#f-univ button").forEach(x => x.classList.toggle("on", x.dataset.v === S.univ));
 }
 function chipsFiltros() {
@@ -868,7 +955,6 @@ function chipsFiltros() {
   if (S.area) l.push([cap(S.area), () => S.area = ""]);
   if (S.grau) l.push([$("#f-grau").selectedOptions[0].text, () => S.grau = ""]);
   if (S.sem) l.push(["Sem a UFSCar nas comparações", () => S.sem = false]);
-  if (!S.incRede) l.push(["Sem os 4 programas em rede", () => S.incRede = true]);
   if (S.ano !== ANOS.at(-1)) l.push(["Ano de referência " + S.ano, () => S.ano = ANOS.at(-1)]);
   const el = $("#chips-out");
   el.innerHTML = l.map(([t], i) => `<button type="button" class="chip-out" data-i="${i}" title="Remover filtro">${esc(t)} ×</button>`).join("");
@@ -890,12 +976,11 @@ function iniciaFiltros() {
   $("#f-area").onchange = e => { S.area = e.target.value; render(); };
   $("#f-grau").onchange = e => { S.grau = e.target.value; render(); };
   $("#f-sem").onchange = e => { S.sem = e.target.checked; render(); };
-  $("#f-rede").onchange = e => { S.incRede = e.target.checked; render(); };
   try { S.rotulos = localStorage.getItem("rotulos") !== "0"; } catch { }
   $("#f-rotulos").checked = S.rotulos;
   $("#f-rotulos").onchange = e => { S.rotulos = e.target.checked; try { localStorage.setItem("rotulos", S.rotulos ? "1" : "0"); } catch { } render(); };
   $$("#f-univ button").forEach(b => b.onclick = () => { S.univ = b.dataset.v; $$("#f-univ button").forEach(x => x.classList.toggle("on", x === b)); render(); });
-  $("#limpar").onclick = () => { Object.assign(S, { univ: "fed", area: "", grau: "", sem: false, ano: ANOS.at(-1), a0: ANOS[0], a1: ANOS.at(-1), busca: "", conc: "", mun: "", vinc: "", ord: "nota", grp: "", incRede: true, qvin: "", qnota: "" }); $("#f-rede").checked = true; $("#f-area").value = ""; $("#f-grau").value = ""; $("#f-sem").checked = false; $("#f-ano").value = S.ano; $$("#f-univ button").forEach(x => x.classList.toggle("on", x.dataset.v === "fed")); render(); };
+  $("#limpar").onclick = () => { Object.assign(S, { univ: "fed", area: "", grau: "", sem: false, ano: ANOS.at(-1), a0: ANOS[0], a1: ANOS.at(-1), busca: "", conc: "", mun: "", vinc: "", ord: "nota", grp: "", rkJur: null, arArea: "", arIes: "", qvin: "", qnota: "" }); $("#f-area").value = ""; $("#f-grau").value = ""; $("#f-sem").checked = false; $("#f-ano").value = S.ano; $$("#f-univ button").forEach(x => x.classList.toggle("on", x.dataset.v === "fed")); render(); };
   $$("#abas button").forEach(b => b.onclick = () => ir(b.dataset.tab));
   $("#m-fechar").onclick = () => $("#modal").close();
   $("#modal").addEventListener("close", destruirModal);

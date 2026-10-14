@@ -52,7 +52,7 @@ o botão "Trajetória" abre o histórico. Programa sem site próprio aponta para
 Se surgir um programa novo, acrescente o código em `SITES` e rode o script.
 
 ## Programas em rede e níveis
-- Os 4 programas em rede em que a UFSCar é associada (PROFMAT, PROFIS, PROEF, PROF-FILO) entram nos totais da UFSCar por padrão (caixa no filtro). No ETL, cada programa gera linhas copiadas com `rede = "S"` (ies/ie = UFSCAR); Sudeste e Brasil ignoram essas cópias. Os números são os da rede inteira.
+- Os 4 programas em rede em que a UFSCar é associada (PROFMAT, PROFIS, PROEF, PROF-FILO) entram só na contagem de programas e nos conceitos da UFSCar (56 próprios + 4 = 60). Discentes, docentes e demais indicadores usam apenas os programas próprios, pois a CAPES não separa as pessoas dessas redes por instituição. No ETL, cada programa gera linhas copiadas com `rede = "S"` (ies/ie = UFSCAR); o painel só usa as cópias de Programas; Sudeste e Brasil ignoram todas.
 - A aba "Por nível" separa mestrado/doutorado acadêmico e profissional; o filtro "Nível" aceita cada um isoladamente.
 
 ## Design

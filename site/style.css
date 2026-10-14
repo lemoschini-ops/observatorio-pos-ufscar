@@ -277,3 +277,4 @@ footer.rodape p{margin:.2rem 0}
   .tabela-wrap table:not(.heat) td.t{min-width:52px}
   .tabela-wrap table .d,.tabela-wrap table .hc{font-size:.74rem}
 }
+.chips-row{display:flex;flex-wrap:wrap;gap:.35rem}.chips-row .chip{padding:.3rem .8rem;box-shadow:none}
