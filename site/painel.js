@@ -280,7 +280,7 @@ function lai(s) {
   chart('cDec', {type: 'doughnut', data: {labels: a.decisoes.map(x => x[0]), datasets: [{data: a.decisoes.map(x => x[1]), backgroundColor: PALETTE}]}, options: {plugins: {legend: {position: 'right', labels: {boxWidth: 12}}}}});
   chart('cAss', {type: 'bar', data: {labels: a.assuntos.map(x => x[0]), datasets: [{data: a.assuntos.map(x => x[1]), backgroundColor: C.blue}]}, options: {indexAxis: 'y', plugins: {legend: {display: false}}}});
   chart('cMes', {type: 'bar', data: {labels: MESES, datasets: [{data: a.por_mes, backgroundColor: C.navy}]}, options: {plugins: {legend: {display: false}}}});
-  $('#srcLai').innerHTML = `Fonte: ${src({nome: L.fonte, url: L.url})}. ${L.nota} O arquivo “filtrado” da CGU exclui pedidos com informação restrita; os totais podem diferir do Painel LAI. *Ano em curso.`;
+  $('#srcLai').innerHTML = `Fonte: ${src({nome: L.fonte, url: L.url})}. ${u.extracao_cgu ? `Extração da CGU de ${new Date(u.extracao_cgu + 'T12:00').toLocaleDateString('pt-BR')}. ` : ''}${L.nota} Base completa de pedidos da CGU (não só os publicados no BuscaLAI); recursos contados pelo órgão do pedido. *Ano em curso.`;
 }
 
 /* ======================= OUVIDORIA ======================= */
@@ -339,7 +339,7 @@ function ouv(s) {
   dtable('#tOAss', [{label: 'Assunto', get: r => r.ass}, {label: 'Manifestações', n: 1, get: r => r.n, fmt: v => fmt(v, 0)}, {label: '% do total', n: 1, get: r => r.n, fmt: v => fmt(100 * v / Math.max(1, tb.reduce((a, r) => a + r.n, 0))) + '%'}, {label: 'Tempo médio (d)', n: 1, get: r => r.tempo, fmt: v => fmt(v)}, {label: '% no prazo', n: 1, get: r => r.prazo, fmt: v => fmt(v)}],
     tb, {sort: 1, search: true, sel: r => r.ass === ass, onRow: r => setS({ass: r.ass === ass ? '' : r.ass})});
   setCsv('oass', 'ouvidoria_assuntos', ['Assunto', 'Manifestações', 'Tempo médio (dias)', '% no prazo'], tb.map(r => [r.ass, r.n, r.tempo, r.prazo]));
-  $('#srcOuv').innerHTML = `Fonte: ${src({nome: O.fonte, url: O.url})}. ${O.nota} Referência: universidades federais = soma dos órgãos “Universidade Federal …”; prazo legal de resposta: 30 dias.`;
+  $('#srcOuv').innerHTML = `Fonte: ${src({nome: O.fonte, url: O.url})}. ${O.extracao_cgu ? `Extração da CGU de ${new Date(O.extracao_cgu + 'T12:00').toLocaleDateString('pt-BR')}. ` : ''}${O.nota} Referência: universidades federais = soma dos órgãos “Universidade Federal …”; prazo legal de resposta: 30 dias.`;
 }
 
 /* ======================= CORREGEDORIA ======================= */
