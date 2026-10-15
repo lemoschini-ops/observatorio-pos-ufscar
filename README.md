@@ -48,3 +48,20 @@ Os indicadores comparativos são **calculados** com fórmulas simplificadas (ex.
 - **CGU-PAD** (dados abertos da CGU): procedimentos disciplinares por órgão. Guardam-se só linhas anônimas da UFSCar (ano, tipo, fase, assunto, nº de investigados, penalidades, dias até o julgamento) e totais por universidade e ano, sem número de processo.
 - **CEAF** (Portal da Transparência, arquivo diário): só contagem de expulsões com lotação na UFSCar e nas universidades federais; nomes e CPF não são guardados.
 - O extrato público do CGU-PAD tem poucos registros a partir de 2023, então a análise vai até 2022. A comparação usa procedimentos por 1.000 servidores (docentes + técnicos do Censo 2024).
+
+### Atualização automática da base de dados (24 horas)
+1. **Em execução com a API FastAPI**:
+   O agendador integrado (`app/scheduler.py`) executa automaticamente a cada 24 horas em segundo plano, sem travar as requisições da API.
+   - Consulta de status: `GET /api/atualizacao/status`
+   - Disparo manual imediato: `POST /api/atualizacao/executar`
+   - Configuração via variáveis de ambiente:
+     - `AUTO_UPDATE_HOURS=24` (intervalo em horas)
+     - `DISABLE_AUTO_UPDATE=true` (desativa se necessário)
+
+2. **No Agendador de Tarefas do Windows (independente do servidor)**:
+   - Para registrar uma tarefa diária no Windows:
+     ```powershell
+     powershell -ExecutionPolicy Bypass -File scripts/agendar_tarefa_windows.ps1 -Horario "03:00"
+     ```
+   - Execução direta via lote: `scripts\atualizar_diario.bat`
+

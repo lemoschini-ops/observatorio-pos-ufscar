@@ -408,14 +408,12 @@ def coletar_portal(anos: list[int]) -> dict:
 
 
 # --------------------------------------------------------------------------- main
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--only", default="iesgo,lai,ouv,cor,comp")
-    ap.add_argument("--anos", default=f"2020-{date.today().year}")
-    a = ap.parse_args()
-    ini, fim = (int(x) for x in a.anos.split("-"))
+def build_painel(only: str = "iesgo,lai,ouv,cor,comp", anos_str: str | None = None) -> Path:
+    if anos_str is None:
+        anos_str = f"2020-{date.today().year}"
+    ini, fim = (int(x) for x in anos_str.split("-"))
     anos = list(range(ini, fim + 1))
-    quais = set(a.only.split(","))
+    quais = set(only.split(","))
 
     atual = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
     painel = {"orgao": {"nome": UFSCAR_NOME, "sigla": UFSCAR_SIGLA}, **{k: atual[k] for k in ("tcu", "cgu") if k in atual}}
@@ -446,6 +444,15 @@ def main():
     DATA.mkdir(exist_ok=True)
     OUT.write_text(json.dumps(painel, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"OK -> {OUT}")
+    return OUT
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--only", default="iesgo,lai,ouv,cor,comp")
+    ap.add_argument("--anos", default=f"2020-{date.today().year}")
+    a = ap.parse_args(argv)
+    build_painel(only=a.only, anos_str=a.anos)
 
 
 if __name__ == "__main__":

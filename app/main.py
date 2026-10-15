@@ -5,12 +5,15 @@ Encapsula a API oficial https://api.portaldatransparencia.gov.br e aplica o
 """
 import asyncio
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
+from app.scheduler import router as atualizacao_router, iniciar_agendador, parar_agendador
 
 BASE_URL = "https://api.portaldatransparencia.gov.br/api-de-dados"
 
@@ -30,16 +33,28 @@ API_KEY = os.getenv("PORTAL_TRANSPARENCIA_API_KEY", "")
 ORGAO = os.getenv("UFSCAR_CODIGO_ORGAO", "26280")
 ORGAO_SUPERIOR = os.getenv("UFSCAR_ORGAO_SUPERIOR", "26000")
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    iniciar_agendador()
+    try:
+        yield
+    finally:
+        parar_agendador()
+
+
 app = FastAPI(
     title="API Transparência UFSCar",
     description="Dados da Universidade Federal de São Carlos no Portal da Transparência do Governo Federal.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 client = httpx.AsyncClient(timeout=30)
 
 from app.corregedoria import router as corregedoria_router  # noqa: E402
 
 app.include_router(corregedoria_router)
+app.include_router(atualizacao_router)
 
 
 async def consultar(path: str, params: dict) -> list | dict:
