@@ -52,8 +52,10 @@ app = FastAPI(
 client = httpx.AsyncClient(timeout=30)
 
 from app.corregedoria import router as corregedoria_router  # noqa: E402
+from app.conexao_cgu import router as conexao_cgu_router  # noqa: E402
 
 app.include_router(corregedoria_router)
+app.include_router(conexao_cgu_router)
 app.include_router(atualizacao_router)
 
 

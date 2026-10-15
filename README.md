@@ -21,7 +21,7 @@ Painel em `/painel` (JSON em `/api/painel`). Os dados são coletados por `py -m 
 | Bloco | Fonte oficial | Acesso |
 |---|---|---|
 | TCU · iESGo 2024 | planilha pública do TCU (https://iesgo.tcu.gov.br) | download (o TCU não oferece API para o iESGo) |
-| CGU · Acesso à Informação | dados abertos Fala.BR (CSV anual) | download, sem chave |
+| CGU · Acesso à Informação | dados abertos Fala.BR, base completa de pedidos e recursos (CSV anual, [Busca LAI › Download](https://buscalai.cgu.gov.br/DownloadDados/DownloadDados)) | download, sem chave |
 | CGU · Portal da Transparência | API oficial | exige `PORTAL_TRANSPARENCIA_API_KEY` |
 
 Opções: `--only iesgo,lai,ouv,portal,comp` e `--anos 2020-2026`. Downloads ficam em `data/_cache/`.
@@ -48,6 +48,14 @@ Os indicadores comparativos são **calculados** com fórmulas simplificadas (ex.
 - **CGU-PAD** (dados abertos da CGU): procedimentos disciplinares por órgão. Guardam-se só linhas anônimas da UFSCar (ano, tipo, fase, assunto, nº de investigados, penalidades, dias até o julgamento) e totais por universidade e ano, sem número de processo.
 - **CEAF** (Portal da Transparência, arquivo diário): só contagem de expulsões com lotação na UFSCar e nas universidades federais; nomes e CPF não são guardados.
 - O extrato público do CGU-PAD tem poucos registros a partir de 2023, então a análise vai até 2022. A comparação usa procedimentos por 1.000 servidores (docentes + técnicos do Censo 2024).
+
+### Conexão com a CGU (LAI e Ouvidoria)
+A CGU não tem API para os dados do Fala.BR, só arquivos zip. `etl/fonte_cgu.py` consulta o servidor da CGU, compara data e tamanho com o cache e só baixa o que mudou (registro em `data/_cache/fonte_cgu.json`). O ETL usa essa conexão em `--only lai` e `--only ouv`, então a atualização diária passa a trazer extrações novas. A data da extração aparece no painel.
+
+Na LAI, a fonte é a base completa (`FalaBR/Arquivos_FalaBR/Pedidos_csv_{ano}.zip` e `Recursos_Reclamacoes_csv_{ano}.zip`), e não a pasta `Arquivos_FalaBR_Filtrado`, que só tem os pedidos publicados no BuscaLAI (cerca de 2/3 do total). Os recursos da UFSCar são contados pelo órgão do pedido (`OrgaoPedido`), para incluir os julgados pela CGU e pela CMRI. Os CSVs de perfil dos solicitantes que vêm no mesmo zip não são lidos. Entre um download e outro há uma pausa de 5 s: rajadas de requisições fazem o servidor da CGU responder HTTP 405 por alguns minutos.
+- `py -m etl.fonte_cgu` (só sincroniza os arquivos; `--forcar` baixa tudo de novo)
+- `GET /api/cgu/status?verificar=true`: o que está no cache e se a CGU publicou versão nova
+- `POST /api/cgu/atualizar`: baixa o que mudou e recalcula LAI e Ouvidoria no painel e no site
 
 ### Atualização automática da base de dados (24 horas)
 1. **Em execução com a API FastAPI**:

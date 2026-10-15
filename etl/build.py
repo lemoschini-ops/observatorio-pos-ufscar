@@ -24,6 +24,8 @@ from collections import Counter, defaultdict
 from datetime import date, datetime
 from pathlib import Path
 
+from etl import fonte_cgu
+
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 CACHE = DATA / "_cache"
@@ -32,7 +34,7 @@ OUT = DATA / "painel.json"
 IESGO_BASE = "https://iesgo.tcu.gov.br/wp-content/uploads/sites/12/iesgo2024/"
 IESGO_TABELA = "iESGo2024_7_TabelaDinamica.xlsx"
 IESGO_INDIC = "indicadores-iESGo-2024.xlsx"
-LAI_URL = "https://dadosabertos-download.cgu.gov.br/FalaBR/Arquivos_FalaBR_Filtrado/Arquivos_csv_{ano}.zip"
+LAI_URL, LAI_REC_URL, OUV_URL = fonte_cgu.LAI_URL, fonte_cgu.LAI_REC_URL, fonte_cgu.OUV_URL
 PORTAL_URL = "https://api.portaldatransparencia.gov.br/api-de-dados"
 
 UFSCAR_NOME = "Fundação Universidade Federal de São Carlos"
@@ -217,26 +219,34 @@ class Acum:
         return out
 
 
-def _ler_zip(zf: zipfile.ZipFile, sufixo: str):
-    nome = next(n for n in zf.namelist() if n.endswith(sufixo))
+def _ler_zip(zf: zipfile.ZipFile, nome_csv: str):
+    """Lê o CSV AAAAMMDD_<nome_csv> do zip (o prefixo exige o "_", para não pegar SolicitantesPedidos_...)."""
+    nome = next(n for n in zf.namelist() if Path(n).name == nome_csv or Path(n).name.endswith("_" + nome_csv))
     csv.field_size_limit(10 ** 9)
     with zf.open(nome) as raw:
-        txt = io.TextIOWrapper(raw, encoding="utf-16", newline="")
+        bom = raw.read(2)
+    enc = "utf-16" if bom in (b"\xff\xfe", b"\xfe\xff") else "utf-8-sig"
+    with zf.open(nome) as raw:
+        txt = io.TextIOWrapper(raw, encoding=enc, newline="")
         yield from csv.DictReader(txt, delimiter=";")
 
 
 def coletar_lai(anos: list[int]) -> dict:
     resultado = []
     for ano in anos:
-        try:
-            zpath = baixar(LAI_URL.format(ano=ano), CACHE / f"lai_{ano}.zip")
-        except Exception as e:  # ano indisponível
-            print(f"  LAI {ano}: indisponível ({e})")
+        zpath, rpath = CACHE / f"lai_{ano}.zip", CACHE / f"lai_rec_{ano}.zip"
+        sinc = {}
+        for chave, url, destino in ((f"lai_{ano}", LAI_URL, zpath), (f"lai_rec_{ano}", LAI_REC_URL, rpath)):
+            try:
+                sinc[chave] = fonte_cgu.sincronizar(chave, url.format(ano=ano), destino)
+            except Exception as e:  # ano indisponível
+                sinc[chave] = {"status": "erro", "erro": str(e)}
+        if not zpath.exists():
+            print(f"  LAI {ano}: indisponível ({sinc[f'lai_{ano}'].get('erro')})")
             continue
         uf, univ, fed = Acum(), Acum(), Acum()
-        rec = Counter()
         rec_inst = Counter()
-        with zipfile.ZipFile(zpath) as zf:
+        with zipfile.ZipFile(zpath) as zf:  # não lê SolicitantesPedidos (perfil dos solicitantes)
             for r in _ler_zip(zf, f"Pedidos_csv_{ano}.csv"):
                 org = r["OrgaoDestinatario"]
                 if r["Esfera"].strip() == "Federal":
@@ -245,31 +255,32 @@ def coletar_lai(anos: list[int]) -> dict:
                     univ.add_leve(r)
                 if _eh_ufscar(org):
                     uf.add(r)
-            for r in _ler_zip(zf, f"Recursos_csv_{ano}.csv"):
-                if _eh_ufscar(r["OrgaoDestinatario"]):
-                    rec[r["Situacao"].strip() or "—"] += 1
-                    rec_inst[r["Instancia"].strip() or "—"] += 1
-        item = {"ano": ano, "ufscar": uf.resumo(), "universidades_federais": univ.resumo(False),
-                "executivo_federal": fed.resumo(False)}
-        item["ufscar"]["recursos"] = sum(rec_inst.values())
+        if rpath.exists():
+            with zipfile.ZipFile(rpath) as zf:
+                # pelo órgão do pedido: recursos à CGU/CMRI têm outro OrgaoDestinatario
+                for r in _ler_zip(zf, f"Recursos_Reclamacoes_csv_{ano}.csv"):
+                    if _eh_ufscar(r["OrgaoPedido"]):
+                        rec_inst[r["Instancia"].strip() or "—"] += 1
+        else:
+            print(f"  LAI {ano}: recursos indisponíveis ({sinc[f'lai_rec_{ano}'].get('erro')})")
+        item = {"ano": ano, "extracao_cgu": fonte_cgu.data_extracao(zpath), "ufscar": uf.resumo(),
+                "universidades_federais": univ.resumo(False), "executivo_federal": fed.resumo(False)}
+        item["ufscar"]["recursos"] = sum(rec_inst.values()) if rpath.exists() else None
         item["ufscar"]["recursos_por_instancia"] = rec_inst.most_common()
         # taxa de recursos por 100 pedidos
-        if uf.n:
+        if uf.n and rpath.exists():
             item["ufscar"]["recursos_por_100_pedidos"] = round(100 * sum(rec_inst.values()) / uf.n, 1)
         resultado.append(item)
         print(f"  LAI {ano}: {uf.n} pedidos UFSCar | tempo médio {item['ufscar']['tempo_medio_dias']} d", flush=True)
     return {
         "fonte": "CGU – Dados abertos Fala.BR (Lei de Acesso à Informação)",
-        "url": "https://falabr.cgu.gov.br/publico/DownloadDados/DownloadDadosAbertos.aspx",
+        "url": "https://buscalai.cgu.gov.br/DownloadDados/DownloadDados",
         "anos": resultado,
         "nota": "Ano corrente é parcial (arquivo atualizado pela CGU periodicamente). Nenhum dado pessoal de solicitantes é armazenado.",
     }
 
 
 # --------------------------------------------------------------------------- CGU / Ouvidoria (Fala.BR)
-OUV_URL = "https://dadosabertos-download.cgu.gov.br/e-Ouv/manifestacoes-ouvidoria.zip"
-
-
 def _sem_acento(s: str) -> str:
     import unicodedata
     return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower().strip()
@@ -278,7 +289,10 @@ def _sem_acento(s: str) -> str:
 def coletar_ouvidoria() -> dict:
     """Manifestações de Ouvidoria (e-Ouv/Fala.BR). Guarda linhas anônimas da UFSCar (sem texto nem dados
     demográficos) para filtragem no painel, e médias anuais das universidades federais como referência."""
-    zpath = baixar(OUV_URL, CACHE / "ouvidoria.zip")
+    zpath = CACHE / "ouvidoria.zip"
+    sinc = fonte_cgu.sincronizar("ouvidoria", OUV_URL, zpath)
+    if not zpath.exists():
+        raise RuntimeError(f"Ouvidoria indisponível: {sinc.get('erro')}")
     csv.field_size_limit(10 ** 9)
     tipos, assuntos, ents = [], [], ["UFSCar", "HU-UFSCar (Ebserh)"]
     ix = lambda lst, v: lst.index(v) if v in lst else (lst.append(v) or len(lst) - 1)  # noqa: E731
@@ -428,6 +442,7 @@ def build_painel(only: str = "iesgo,lai,ouv,cor,comp", anos_str: str | None = No
     if "ouv" in quais:
         print("CGU Ouvidoria", flush=True)
         painel["cgu"]["ouvidoria"] = coletar_ouvidoria()
+        painel["cgu"]["ouvidoria"]["extracao_cgu"] = fonte_cgu.data_extracao(CACHE / "ouvidoria.zip")
     if "cor" in quais:
         from etl import correicao
         print("CGU Corregedoria (CGU-PAD e CEAF)", flush=True)

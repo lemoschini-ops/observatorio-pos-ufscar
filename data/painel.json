@@ -7871,21 +7871,22 @@
  "cgu": {
   "lai": {
    "fonte": "CGU – Dados abertos Fala.BR (Lei de Acesso à Informação)",
-   "url": "https://falabr.cgu.gov.br/publico/DownloadDados/DownloadDadosAbertos.aspx",
+   "url": "https://buscalai.cgu.gov.br/DownloadDados/DownloadDados",
    "anos": [
     {
      "ano": 2020,
+     "extracao_cgu": "2026-10-12",
      "ufscar": {
-      "pedidos": 219,
+      "pedidos": 234,
       "tempo_medio_dias": 9.5,
-      "tempo_mediano_dias": 7,
+      "tempo_mediano_dias": 7.0,
       "pct_no_prazo": 100.0,
-      "pct_prorrogado": 8.7,
-      "pct_acesso_concedido": 92.7,
+      "pct_prorrogado": 8.1,
+      "pct_acesso_concedido": 91.5,
       "decisoes": [
        [
         "Acesso Concedido",
-        196
+        207
        ],
        [
         "Acesso Parcialmente Concedido",
@@ -7893,29 +7894,29 @@
        ],
        [
         "Pergunta Duplicada/Repetida",
-        4
+        5
        ],
        [
         "Não se trata de solicitação de informação",
+        5
+       ],
+       [
+        "Acesso Negado",
         4
+       ],
+       [
+        "Órgão não tem competência para responder sobre o assunto",
+        3
        ],
        [
         "Informação Inexistente",
         3
-       ],
-       [
-        "Acesso Negado",
-        3
-       ],
-       [
-        "Órgão não tem competência para responder sobre o assunto",
-        2
        ]
       ],
       "assuntos": [
        [
         "Educação Superior",
-        162
+        172
        ],
        [
         "Acesso à informação",
@@ -7930,6 +7931,10 @@
         3
        ],
        [
+        "Auditoria",
+        2
+       ],
+       [
         "Outros em Educação",
         2
        ],
@@ -7942,208 +7947,226 @@
         2
        ],
        [
-        "Transparência",
+        "Energia Elétrica",
         2
        ],
        [
-        "FIES",
-        1
-       ],
-       [
-        "Gestão de Pessoas",
-        1
+        "Transparência",
+        2
        ]
       ],
       "por_mes": [
-       14,
+       16,
        21,
        13,
-       17,
-       16,
-       23,
-       30,
-       25,
        20,
-       14,
+       17,
+       24,
+       31,
+       26,
+       21,
        16,
-       10
+       16,
+       13
       ],
-      "recursos": 19,
+      "recursos": 23,
       "recursos_por_instancia": [
        [
         "Primeira Instância",
-        16
+        17
        ],
        [
         "Segunda Instância",
         3
+       ],
+       [
+        "CGU",
+        3
        ]
       ],
-      "recursos_por_100_pedidos": 8.7
+      "recursos_por_100_pedidos": 9.8
      },
      "universidades_federais": {
-      "pedidos": 12831,
-      "tempo_medio_dias": 16.0,
-      "tempo_mediano_dias": 13,
-      "pct_no_prazo": 90.1,
+      "pedidos": 14811,
+      "tempo_medio_dias": 15.7,
+      "tempo_mediano_dias": 12,
+      "pct_no_prazo": 90.8,
       "pct_prorrogado": 0.0,
       "pct_acesso_concedido": null
      },
      "executivo_federal": {
-      "pedidos": 110663,
-      "tempo_medio_dias": 13.2,
-      "tempo_mediano_dias": 10,
-      "pct_no_prazo": 96.3,
+      "pedidos": 153659,
+      "tempo_medio_dias": 12.5,
+      "tempo_mediano_dias": 9.0,
+      "pct_no_prazo": 96.7,
       "pct_prorrogado": 0.0,
       "pct_acesso_concedido": null
      }
     },
     {
      "ano": 2021,
+     "extracao_cgu": "2026-10-12",
      "ufscar": {
-      "pedidos": 110,
-      "tempo_medio_dias": 9.0,
+      "pedidos": 154,
+      "tempo_medio_dias": 8.9,
       "tempo_mediano_dias": 7.0,
-      "pct_no_prazo": 99.1,
-      "pct_prorrogado": 10.9,
-      "pct_acesso_concedido": 90.9,
+      "pct_no_prazo": 98.7,
+      "pct_prorrogado": 8.4,
+      "pct_acesso_concedido": 87.7,
       "decisoes": [
        [
         "Acesso Concedido",
-        95
+        128
        ],
        [
         "Acesso Parcialmente Concedido",
-        5
+        7
        ],
        [
         "Pergunta Duplicada/Repetida",
-        4
-       ],
-       [
-        "Não se trata de solicitação de informação",
-        3
+        7
        ],
        [
         "Acesso Negado",
-        2
+        6
+       ],
+       [
+        "Não se trata de solicitação de informação",
+        4
        ],
        [
         "Informação Inexistente",
+        1
+       ],
+       [
+        "Órgão não tem competência para responder sobre o assunto",
         1
        ]
       ],
       "assuntos": [
        [
         "Acesso à informação",
-        34
+        50
        ],
        [
         "Educação Superior",
-        22
-       ],
-       [
-        "Outros em Educação",
-        7
+        31
        ],
        [
         "Universidades e Institutos",
-        7
+        9
        ],
        [
-        "Coronavírus (COVID-19)",
-        3
-       ],
-       [
-        "Transparência",
-        2
+        "Outros em Educação",
+        8
        ],
        [
         "Compras públicas",
-        2
+        4
        ],
        [
         "Auditoria",
-        2
+        4
+       ],
+       [
+        "Concursos e processos seletivos",
+        4
+       ],
+       [
+        "Transparência",
+        3
        ],
        [
         "Gestão de Pessoas",
-        2
+        3
        ],
        [
         "Outros em Administração",
-        2
+        3
        ]
       ],
       "por_mes": [
-       8,
-       14,
+       11,
+       17,
+       22,
+       11,
+       17,
        13,
-       8,
-       11,
-       7,
-       9,
-       6,
        11,
        9,
-       7,
-       7
+       14,
+       11,
+       9,
+       9
       ],
-      "recursos": 4,
+      "recursos": 15,
       "recursos_por_instancia": [
        [
         "Primeira Instância",
-        4
+        8
+       ],
+       [
+        "Segunda Instância",
+        3
+       ],
+       [
+        "CGU",
+        3
+       ],
+       [
+        "Pedido de Revisão",
+        1
        ]
       ],
-      "recursos_por_100_pedidos": 3.6
+      "recursos_por_100_pedidos": 9.7
      },
      "universidades_federais": {
-      "pedidos": 9056,
-      "tempo_medio_dias": 14.9,
+      "pedidos": 12346,
+      "tempo_medio_dias": 14.8,
       "tempo_mediano_dias": 12.0,
-      "pct_no_prazo": 91.4,
+      "pct_no_prazo": 91.6,
       "pct_prorrogado": 0.0,
       "pct_acesso_concedido": null
      },
      "executivo_federal": {
-      "pedidos": 79111,
-      "tempo_medio_dias": 12.8,
-      "tempo_mediano_dias": 10,
-      "pct_no_prazo": 96.9,
+      "pedidos": 119106,
+      "tempo_medio_dias": 12.3,
+      "tempo_mediano_dias": 10.0,
+      "pct_no_prazo": 97.1,
       "pct_prorrogado": 0.0,
       "pct_acesso_concedido": null
      }
     },
     {
      "ano": 2022,
+     "extracao_cgu": "2026-10-12",
      "ufscar": {
-      "pedidos": 136,
-      "tempo_medio_dias": 16.1,
-      "tempo_mediano_dias": 12.0,
-      "pct_no_prazo": 84.6,
-      "pct_prorrogado": 20.6,
-      "pct_acesso_concedido": 94.9,
+      "pedidos": 166,
+      "tempo_medio_dias": 16.2,
+      "tempo_mediano_dias": 13.0,
+      "pct_no_prazo": 84.9,
+      "pct_prorrogado": 18.1,
+      "pct_acesso_concedido": 90.4,
       "decisoes": [
        [
         "Acesso Concedido",
-        116
+        137
        ],
        [
         "Acesso Parcialmente Concedido",
         13
        ],
        [
-        "Órgão não tem competência para responder sobre o assunto",
-        4
+        "Acesso Negado",
+        7
        ],
        [
         "Não se trata de solicitação de informação",
-        1
+        4
        ],
        [
-        "Acesso Negado",
-        1
+        "Órgão não tem competência para responder sobre o assunto",
+        4
        ],
        [
         "Informação Inexistente",
@@ -8153,7 +8176,7 @@
       "assuntos": [
        [
         "Acesso à informação",
-        47
+        64
        ],
        [
         "Universidades e Institutos",
@@ -8165,132 +8188,149 @@
        ],
        [
         "Educação Superior",
-        14
+        17
+       ],
+       [
+        "Certificado ou Diploma",
+        3
+       ],
+       [
+        "Outros em Administração",
+        3
+       ],
+       [
+        "Auxílio",
+        3
        ],
        [
         "Cotas",
         3
        ],
        [
-        "Outros em Administração",
-        2
+        "Gestão de Pessoas",
+        3
        ],
        [
         "Bolsas",
         2
-       ],
-       [
-        "Auxílio",
-        2
-       ],
-       [
-        "Compras públicas",
-        2
-       ],
-       [
-        "Planejamento e Gestão",
-        2
        ]
       ],
       "por_mes": [
-       10,
-       13,
-       9,
-       8,
-       36,
-       15,
-       13,
        14,
-       5,
-       5,
-       4,
+       15,
+       12,
+       9,
+       42,
+       17,
+       16,
+       14,
+       7,
+       10,
+       6,
        4
       ],
-      "recursos": 14,
+      "recursos": 30,
       "recursos_por_instancia": [
        [
         "Primeira Instância",
-        10
+        16
        ],
        [
         "Segunda Instância",
-        4
+        11
+       ],
+       [
+        "CGU",
+        2
+       ],
+       [
+        "CMRI",
+        1
        ]
       ],
-      "recursos_por_100_pedidos": 10.3
+      "recursos_por_100_pedidos": 18.1
      },
      "universidades_federais": {
-      "pedidos": 7143,
-      "tempo_medio_dias": 12.6,
-      "tempo_mediano_dias": 10,
-      "pct_no_prazo": 93.9,
+      "pedidos": 9137,
+      "tempo_medio_dias": 12.9,
+      "tempo_mediano_dias": 11,
+      "pct_no_prazo": 93.6,
       "pct_prorrogado": 0.0,
       "pct_acesso_concedido": null
      },
      "executivo_federal": {
-      "pedidos": 69062,
-      "tempo_medio_dias": 12.0,
-      "tempo_mediano_dias": 10.0,
-      "pct_no_prazo": 97.9,
+      "pedidos": 110407,
+      "tempo_medio_dias": 11.4,
+      "tempo_mediano_dias": 8,
+      "pct_no_prazo": 98.1,
       "pct_prorrogado": 0.0,
       "pct_acesso_concedido": null
      }
     },
     {
      "ano": 2023,
+     "extracao_cgu": "2026-10-12",
      "ufscar": {
-      "pedidos": 141,
-      "tempo_medio_dias": 15.9,
+      "pedidos": 201,
+      "tempo_medio_dias": 16.3,
       "tempo_mediano_dias": 14,
-      "pct_no_prazo": 85.8,
-      "pct_prorrogado": 15.6,
-      "pct_acesso_concedido": 90.8,
+      "pct_no_prazo": 86.6,
+      "pct_prorrogado": 16.9,
+      "pct_acesso_concedido": 89.1,
       "decisoes": [
        [
         "Acesso Concedido",
-        117
+        166
        ],
        [
         "Acesso Parcialmente Concedido",
-        11
+        13
+       ],
+       [
+        "Não se trata de solicitação de informação",
+        7
+       ],
+       [
+        "Informação Inexistente",
+        6
        ],
        [
         "Pergunta Duplicada/Repetida",
         5
        ],
        [
-        "Não se trata de solicitação de informação",
-        3
-       ],
-       [
-        "Informação Inexistente",
-        3
-       ],
-       [
         "Acesso Negado",
-        1
+        2
        ],
        [
         "Órgão não tem competência para responder sobre o assunto",
-        1
+        2
        ]
       ],
       "assuntos": [
        [
         "Acesso à informação",
-        65
+        95
        ],
        [
         "Educação Superior",
-        8
-       ],
-       [
-        "Gestão de Pessoas",
-        7
+        11
        ],
        [
         "Universidades e Institutos",
-        7
+        10
+       ],
+       [
+        "Gestão de Pessoas",
+        9
+       ],
+       [
+        "Outros em Administração",
+        6
+       ],
+       [
+        "Orçamento",
+        5
        ],
        [
         "Normas e Fiscalização",
@@ -8301,283 +8341,29 @@
         4
        ],
        [
-        "Outros em Administração",
+        "Planejamento e Gestão",
         4
        ],
        [
         "Ações Afirmativas",
         4
-       ],
-       [
-        "Planejamento e Gestão",
-        3
-       ],
-       [
-        "Infraestrutura e Fomento",
-        3
        ]
       ],
       "por_mes": [
-       7,
-       12,
-       22,
-       9,
+       10,
+       14,
+       27,
+       13,
+       17,
+       27,
+       16,
+       16,
        12,
        19,
-       14,
-       10,
-       7,
-       13,
-       8,
-       8
+       20,
+       10
       ],
-      "recursos": 9,
-      "recursos_por_instancia": [
-       [
-        "Primeira Instância",
-        6
-       ],
-       [
-        "Segunda Instância",
-        3
-       ]
-      ],
-      "recursos_por_100_pedidos": 6.4
-     },
-     "universidades_federais": {
-      "pedidos": 12502,
-      "tempo_medio_dias": 13.8,
-      "tempo_mediano_dias": 12.0,
-      "pct_no_prazo": 93.6,
-      "pct_prorrogado": 0.0,
-      "pct_acesso_concedido": null
-     },
-     "executivo_federal": {
-      "pedidos": 89508,
-      "tempo_medio_dias": 13.4,
-      "tempo_mediano_dias": 12.0,
-      "pct_no_prazo": 97.7,
-      "pct_prorrogado": 0.0,
-      "pct_acesso_concedido": null
-     }
-    },
-    {
-     "ano": 2024,
-     "ufscar": {
-      "pedidos": 100,
-      "tempo_medio_dias": 10.8,
-      "tempo_mediano_dias": 9.0,
-      "pct_no_prazo": 95.0,
-      "pct_prorrogado": 9.0,
-      "pct_acesso_concedido": 95.0,
-      "decisoes": [
-       [
-        "Acesso Concedido",
-        91
-       ],
-       [
-        "Acesso Parcialmente Concedido",
-        4
-       ],
-       [
-        "Acesso Negado",
-        2
-       ],
-       [
-        "Não se trata de solicitação de informação",
-        1
-       ],
-       [
-        "Órgão não tem competência para responder sobre o assunto",
-        1
-       ],
-       [
-        "Pergunta Duplicada/Repetida",
-        1
-       ]
-      ],
-      "assuntos": [
-       [
-        "Acesso à informação",
-        50
-       ],
-       [
-        "Ações Afirmativas",
-        8
-       ],
-       [
-        "Gestão de Pessoas",
-        4
-       ],
-       [
-        "Educação Superior",
-        4
-       ],
-       [
-        "Orçamento",
-        3
-       ],
-       [
-        "Planejamento e Gestão",
-        3
-       ],
-       [
-        "Universidades e Institutos",
-        2
-       ],
-       [
-        "Assédio sexual",
-        2
-       ],
-       [
-        "Normas e Fiscalização",
-        2
-       ],
-       [
-        "Infraestrutura e Fomento",
-        2
-       ]
-      ],
-      "por_mes": [
-       15,
-       7,
-       8,
-       2,
-       11,
-       11,
-       11,
-       7,
-       4,
-       13,
-       6,
-       5
-      ],
-      "recursos": 3,
-      "recursos_por_instancia": [
-       [
-        "Primeira Instância",
-        2
-       ],
-       [
-        "Segunda Instância",
-        1
-       ]
-      ],
-      "recursos_por_100_pedidos": 3.0
-     },
-     "universidades_federais": {
-      "pedidos": 12377,
-      "tempo_medio_dias": 13.5,
-      "tempo_mediano_dias": 11,
-      "pct_no_prazo": 94.0,
-      "pct_prorrogado": 0.0,
-      "pct_acesso_concedido": null
-     },
-     "executivo_federal": {
-      "pedidos": 78894,
-      "tempo_medio_dias": 14.6,
-      "tempo_mediano_dias": 14.0,
-      "pct_no_prazo": 97.2,
-      "pct_prorrogado": 0.0,
-      "pct_acesso_concedido": null
-     }
-    },
-    {
-     "ano": 2025,
-     "ufscar": {
-      "pedidos": 132,
-      "tempo_medio_dias": 11.1,
-      "tempo_mediano_dias": 9.0,
-      "pct_no_prazo": 95.5,
-      "pct_prorrogado": 9.1,
-      "pct_acesso_concedido": 87.9,
-      "decisoes": [
-       [
-        "Acesso Concedido",
-        115
-       ],
-       [
-        "Pergunta Duplicada/Repetida",
-        5
-       ],
-       [
-        "Acesso Negado",
-        4
-       ],
-       [
-        "Informação Inexistente",
-        3
-       ],
-       [
-        "Não se trata de solicitação de informação",
-        3
-       ],
-       [
-        "Órgão não tem competência para responder sobre o assunto",
-        1
-       ],
-       [
-        "Acesso Parcialmente Concedido",
-        1
-       ]
-      ],
-      "assuntos": [
-       [
-        "Acesso à informação",
-        45
-       ],
-       [
-        "Transparência e acesso à informação",
-        14
-       ],
-       [
-        "Ciência, tecnologia e inovação",
-        11
-       ],
-       [
-        "Concursos e processos seletivos",
-        8
-       ],
-       [
-        "Planejamento e Gestão",
-        7
-       ],
-       [
-        "Educação Superior",
-        6
-       ],
-       [
-        "Gestão de Pessoas",
-        3
-       ],
-       [
-        "Ações Afirmativas",
-        3
-       ],
-       [
-        "Não informado",
-        3
-       ],
-       [
-        "Normas e Fiscalização",
-        3
-       ]
-      ],
-      "por_mes": [
-       11,
-       6,
-       12,
-       6,
-       11,
-       9,
-       13,
-       15,
-       12,
-       15,
-       9,
-       13
-      ],
-      "recursos": 11,
+      "recursos": 16,
       "recursos_por_instancia": [
        [
         "Primeira Instância",
@@ -8585,141 +8371,434 @@
        ],
        [
         "Segunda Instância",
+        3
+       ],
+       [
+        "CGU",
+        2
+       ],
+       [
+        "CMRI",
         1
        ]
       ],
-      "recursos_por_100_pedidos": 8.3
+      "recursos_por_100_pedidos": 8.0
      },
      "universidades_federais": {
-      "pedidos": 11740,
-      "tempo_medio_dias": 14.3,
-      "tempo_mediano_dias": 12.0,
-      "pct_no_prazo": 93.5,
+      "pedidos": 15491,
+      "tempo_medio_dias": 13.9,
+      "tempo_mediano_dias": 12,
+      "pct_no_prazo": 93.7,
       "pct_prorrogado": 0.0,
       "pct_acesso_concedido": null
      },
      "executivo_federal": {
-      "pedidos": 83827,
-      "tempo_medio_dias": 14.6,
-      "tempo_mediano_dias": 14,
-      "pct_no_prazo": 97.2,
+      "pedidos": 131533,
+      "tempo_medio_dias": 12.8,
+      "tempo_mediano_dias": 11,
+      "pct_no_prazo": 97.9,
+      "pct_prorrogado": 0.0,
+      "pct_acesso_concedido": null
+     }
+    },
+    {
+     "ano": 2024,
+     "extracao_cgu": "2026-10-12",
+     "ufscar": {
+      "pedidos": 171,
+      "tempo_medio_dias": 11.2,
+      "tempo_mediano_dias": 9,
+      "pct_no_prazo": 94.7,
+      "pct_prorrogado": 11.7,
+      "pct_acesso_concedido": 90.1,
+      "decisoes": [
+       [
+        "Acesso Concedido",
+        149
+       ],
+       [
+        "Não se trata de solicitação de informação",
+        9
+       ],
+       [
+        "Acesso Negado",
+        5
+       ],
+       [
+        "Acesso Parcialmente Concedido",
+        5
+       ],
+       [
+        "Órgão não tem competência para responder sobre o assunto",
+        1
+       ],
+       [
+        "Pergunta Duplicada/Repetida",
+        1
+       ],
+       [
+        "Informação Inexistente",
+        1
+       ]
+      ],
+      "assuntos": [
+       [
+        "Acesso à informação",
+        86
+       ],
+       [
+        "Ações Afirmativas",
+        11
+       ],
+       [
+        "Educação Superior",
+        7
+       ],
+       [
+        "Orçamento",
+        7
+       ],
+       [
+        "Gestão de Pessoas",
+        6
+       ],
+       [
+        "Planejamento e Gestão",
+        6
+       ],
+       [
+        "Assédio sexual",
+        3
+       ],
+       [
+        "Matrículas",
+        3
+       ],
+       [
+        "Dados Pessoais - LGPD",
+        3
+       ],
+       [
+        "Outros em Pesquisa e Desenvolvimento",
+        2
+       ]
+      ],
+      "por_mes": [
+       23,
+       13,
+       14,
+       12,
+       16,
+       16,
+       16,
+       15,
+       8,
+       15,
+       13,
+       10
+      ],
+      "recursos": 5,
+      "recursos_por_instancia": [
+       [
+        "Primeira Instância",
+        2
+       ],
+       [
+        "Segunda Instância",
+        1
+       ],
+       [
+        "CGU",
+        1
+       ],
+       [
+        "CMRI",
+        1
+       ]
+      ],
+      "recursos_por_100_pedidos": 2.9
+     },
+     "universidades_federais": {
+      "pedidos": 15044,
+      "tempo_medio_dias": 13.6,
+      "tempo_mediano_dias": 11.0,
+      "pct_no_prazo": 93.9,
+      "pct_prorrogado": 0.0,
+      "pct_acesso_concedido": null
+     },
+     "executivo_federal": {
+      "pedidos": 117345,
+      "tempo_medio_dias": 13.9,
+      "tempo_mediano_dias": 13,
+      "pct_no_prazo": 97.5,
+      "pct_prorrogado": 0.0,
+      "pct_acesso_concedido": null
+     }
+    },
+    {
+     "ano": 2025,
+     "extracao_cgu": "2026-10-12",
+     "ufscar": {
+      "pedidos": 198,
+      "tempo_medio_dias": 11.0,
+      "tempo_mediano_dias": 9.0,
+      "pct_no_prazo": 95.5,
+      "pct_prorrogado": 9.6,
+      "pct_acesso_concedido": 87.4,
+      "decisoes": [
+       [
+        "Acesso Concedido",
+        170
+       ],
+       [
+        "Não se trata de solicitação de informação",
+        6
+       ],
+       [
+        "Acesso Negado",
+        6
+       ],
+       [
+        "Pergunta Duplicada/Repetida",
+        6
+       ],
+       [
+        "Informação Inexistente",
+        4
+       ],
+       [
+        "Órgão não tem competência para responder sobre o assunto",
+        3
+       ],
+       [
+        "Acesso Parcialmente Concedido",
+        3
+       ]
+      ],
+      "assuntos": [
+       [
+        "Acesso à informação",
+        68
+       ],
+       [
+        "Transparência e acesso à informação",
+        29
+       ],
+       [
+        "Ciência, tecnologia e inovação",
+        11
+       ],
+       [
+        "Educação Superior",
+        10
+       ],
+       [
+        "Concursos e processos seletivos",
+        9
+       ],
+       [
+        "Planejamento e Gestão",
+        8
+       ],
+       [
+        "Gestão de Pessoas",
+        4
+       ],
+       [
+        "Ações Afirmativas",
+        4
+       ],
+       [
+        "Assistência Estudantil",
+        4
+       ],
+       [
+        "Universidades e Institutos",
+        3
+       ]
+      ],
+      "por_mes": [
+       20,
+       12,
+       17,
+       7,
+       17,
+       14,
+       16,
+       21,
+       18,
+       22,
+       15,
+       19
+      ],
+      "recursos": 18,
+      "recursos_por_instancia": [
+       [
+        "Primeira Instância",
+        14
+       ],
+       [
+        "Segunda Instância",
+        2
+       ],
+       [
+        "CGU",
+        2
+       ]
+      ],
+      "recursos_por_100_pedidos": 9.1
+     },
+     "universidades_federais": {
+      "pedidos": 14646,
+      "tempo_medio_dias": 14.5,
+      "tempo_mediano_dias": 13.0,
+      "pct_no_prazo": 93.8,
+      "pct_prorrogado": 0.0,
+      "pct_acesso_concedido": null
+     },
+     "executivo_federal": {
+      "pedidos": 130409,
+      "tempo_medio_dias": 14.1,
+      "tempo_mediano_dias": 13,
+      "pct_no_prazo": 97.4,
       "pct_prorrogado": 0.0,
       "pct_acesso_concedido": null
      }
     },
     {
      "ano": 2026,
+     "extracao_cgu": "2026-10-12",
      "ufscar": {
-      "pedidos": 79,
-      "tempo_medio_dias": 11.0,
+      "pedidos": 136,
+      "tempo_medio_dias": 9.7,
       "tempo_mediano_dias": 8,
-      "pct_no_prazo": 92.4,
-      "pct_prorrogado": 6.3,
-      "pct_acesso_concedido": 88.6,
+      "pct_no_prazo": 94.7,
+      "pct_prorrogado": 4.4,
+      "pct_acesso_concedido": 87.0,
       "decisoes": [
        [
         "Acesso Concedido",
-        68
-       ],
-       [
-        "Órgão não tem competência para responder sobre o assunto",
-        4
-       ],
-       [
-        "Acesso Negado",
-        3
-       ],
-       [
-        "Não se trata de solicitação de informação",
-        2
+        107
        ],
        [
         "Acesso Parcialmente Concedido",
-        2
+        7
+       ],
+       [
+        "Não se trata de solicitação de informação",
+        5
+       ],
+       [
+        "Acesso Negado",
+        5
+       ],
+       [
+        "Órgão não tem competência para responder sobre o assunto",
+        5
+       ],
+       [
+        "Pergunta Duplicada/Repetida",
+        1
+       ],
+       [
+        "Informação Inexistente",
+        1
        ]
       ],
       "assuntos": [
        [
         "Transparência e acesso à informação",
-        26
+        47
        ],
        [
         "Gestão de Pessoas",
-        14
-       ],
-       [
-        "Concursos e processos seletivos",
-        8
-       ],
-       [
-        "Gestão Pública",
-        7
+        18
        ],
        [
         "Educação Superior",
+        11
+       ],
+       [
+        "Concursos e processos seletivos",
+        10
+       ],
+       [
+        "Gestão Pública",
+        10
+       ],
+       [
+        "Não informado",
         5
        ],
        [
         "Estudos e Pesquisas",
-        3
-       ],
-       [
-        "Assistência Estudantil",
-        3
-       ],
-       [
-        "Propriedade Industrial,  Intelectual e Transferência de Tecnologia",
-        2
-       ],
-       [
-        "Dados Pessoais - LGPD",
-        2
+        4
        ],
        [
         "Certidões e Declarações",
-        2
+        4
+       ],
+       [
+        "Ações Afirmativas",
+        4
+       ],
+       [
+        "Cadastros e Documentação",
+        3
        ]
       ],
       "por_mes": [
-       9,
-       9,
-       20,
+       18,
+       10,
+       27,
+       19,
        13,
-       8,
+       16,
        7,
-       4,
+       13,
+       7,
        6,
-       3,
-       0,
        0,
        0
       ],
-      "recursos": 10,
+      "recursos": 26,
       "recursos_por_instancia": [
        [
         "Primeira Instância",
-        8
+        15
        ],
        [
         "Segunda Instância",
+        5
+       ],
+       [
+        "CGU",
+        3
+       ],
+       [
+        "CMRI",
         2
+       ],
+       [
+        "Pedido de Revisão",
+        1
        ]
       ],
-      "recursos_por_100_pedidos": 12.7
+      "recursos_por_100_pedidos": 19.1
      },
      "universidades_federais": {
-      "pedidos": 8188,
-      "tempo_medio_dias": 15.1,
+      "pedidos": 11724,
+      "tempo_medio_dias": 15.5,
       "tempo_mediano_dias": 14.0,
-      "pct_no_prazo": 93.6,
+      "pct_no_prazo": 93.1,
       "pct_prorrogado": 0.0,
       "pct_acesso_concedido": null
      },
      "executivo_federal": {
-      "pedidos": 57283,
-      "tempo_medio_dias": 14.9,
+      "pedidos": 108257,
+      "tempo_medio_dias": 14.3,
       "tempo_mediano_dias": 14,
-      "pct_no_prazo": 97.5,
+      "pct_no_prazo": 97.7,
       "pct_prorrogado": 0.0,
       "pct_acesso_concedido": null
      }
@@ -95075,7 +95154,8 @@
      }
     }
    },
-   "nota": "Cada linha é uma manifestação sem texto e sem dados do manifestante. Satisfação e “demanda atendida” são respondidas voluntariamente, por isso cobrem poucas manifestações."
+   "nota": "Cada linha é uma manifestação sem texto e sem dados do manifestante. Satisfação e “demanda atendida” são respondidas voluntariamente, por isso cobrem poucas manifestações.",
+   "extracao_cgu": "2026-09-01"
   },
   "correicao": {
    "fonte": "CGU – Dados abertos: CGU-PAD (processos disciplinares)",
@@ -102409,5 +102489,5 @@
    "nota": "Cada linha é um procedimento, sem número de processo, sem nomes e sem dados dos investigados. O extrato público do CGU-PAD tem poucos registros de instaurações a partir de 2023 (89 no país inteiro), por isso a análise vai até 2022."
   }
  },
- "gerado_em": "2026-10-15T13:55:16"
+ "gerado_em": "2026-10-15T15:54:59"
 }
