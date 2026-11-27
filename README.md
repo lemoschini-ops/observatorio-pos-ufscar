@@ -28,6 +28,18 @@ Abas: Visão geral, Série histórica (16 indicadores, 2013-2024), Discentes, Do
 Programas em rede (UFSCar sede ou associada) e Comparar IES do Sudeste. Filtros globais de universo, grande área, nível e ano.
 Os dados de redes em que a UFSCar é apenas associada cobrem a rede inteira e não entram nos totais da UFSCar.
 
+## Identidade visual e gráficos
+- A interface segue os fundamentos do **Padrão Digital de Governo (gov.br DS 3.x)**: fonte Rawline (Raleway como alternativa),
+  azul de ação `#1351b4`, foco tracejado, botões em pílula, mensagens com cor e texto, tema claro/escuro e rodapé com a
+  identificação institucional (UFSCar, ProPG e ProPlan).
+- Todas as cores dos gráficos vêm de tokens em `site/style.css`: `--c-u`, `--c-se`, `--c-br` (UFSCar, Sudeste, Brasil),
+  `--dv-1..9` (categórica), `--dv-pos/neu/neg` (subiu, manteve, caiu) e `--cc-*` (escala dos conceitos CAPES).
+  `aplicaTema()` e `grafico()` em `site/app.js` aplicam o mesmo padrão de tipografia, eixos, legenda e dica a todas as figuras.
+- Cada figura tem os botões **Ver tabela** (os mesmos valores em tabela, alternativa acessível) e **CSV**.
+- **Panorama 3D** (aba Programas): cada programa da UFSCar por docentes permanentes × matriculados × Conceito 2025,
+  com cor por grande área e tamanho por titulados. Usa Plotly (gl3d), carregado só ao abrir a aba; sem WebGL, mostra o
+  resumo e a tabela no lugar do gráfico.
+
 ## Avaliação Quadrienal
 `py -m pip install openpyxl pandas && py etl/avaliacao.py` baixa a planilha oficial de resultados (CAPES, 27/05/2026)
 e gera `site/data/quadrienal.json`, cruzando pelo código do programa com a base de Programas 2024.

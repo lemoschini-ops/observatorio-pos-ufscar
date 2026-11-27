@@ -5,19 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Observatório da Pós-Graduação da UFSCar</title>
 <meta name="description" content="Série histórica da pós-graduação stricto sensu da UFSCar comparada com o Sudeste e o Brasil (dados abertos da CAPES).">
+<!-- Padrão Digital de Governo (gov.br DS 3.x): fonte Rawline, com Raleway como alternativa -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdngovbr-ds.estaleiro.serpro.gov.br/design-system/fonts/rawline/css/rawline.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 </head>
 <body>
-<a class="skip" href="#main" style="position:absolute;left:-999px">Ir para o conteúdo</a>
+<a class="skip" href="#main">Ir para o conteúdo</a>
 
 <h1 class="sr-only">Observatório da Pós-Graduação da UFSCar</h1>
 
 <div class="navbar">
-  <nav class="nav-tabs" id="abas" aria-label="Seções">
+  <nav class="nav-tabs" id="abas" aria-label="Seções do Observatório">
     <button class="nav-btn" data-tab="geral">Visão geral</button>
     <button class="nav-btn" data-tab="serie">Série histórica</button>
     <button class="nav-btn" data-tab="discentes">Discentes</button>
@@ -30,14 +32,14 @@
     <button class="nav-btn" data-tab="ranking">Comparar IES</button>
     <button class="nav-btn" data-tab="sobre">Metodologia</button>
   </nav>
-  <div class="nav-tools">
+  <div class="nav-tools" role="group" aria-label="Acessibilidade">
     <button id="fonte-menos" title="Diminuir texto" aria-label="Diminuir texto">A−</button>
     <button id="fonte-mais" title="Aumentar texto" aria-label="Aumentar texto">A+</button>
-    <button id="tema" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro">◐</button>
+    <button id="tema" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro"><span aria-hidden="true">◐</span></button>
   </div>
 </div>
 
-<main id="main">
+<main id="main" tabindex="-1">
   <section class="filters" aria-label="Filtros">
     <div class="filters-grid" id="barra">
       <label>Universo de comparação
@@ -57,9 +59,9 @@
     <div class="chips-out" id="chips-out" aria-live="polite"></div>
   </section>
 
-  <div id="status-banner" class="status" hidden></div>
+  <div id="status-banner" class="status" role="status" hidden></div>
   <div id="nota-rede" class="status ok" hidden></div>
-  <div id="carregando" class="carregando">Carregando dados da CAPES…</div>
+  <div id="carregando" class="carregando" role="status">Carregando dados da CAPES…</div>
   <section class="tab" id="tab-geral" hidden></section>
   <section class="tab" id="tab-serie" hidden></section>
   <section class="tab" id="tab-discentes" hidden></section>
@@ -73,14 +75,27 @@
   <section class="tab" id="tab-sobre" hidden></section>
 </main>
 
-<dialog id="modal"><div class="modal-in">
+<dialog id="modal" aria-labelledby="m-titulo"><div class="modal-in">
   <button class="fechar" id="m-fechar" aria-label="Fechar">×</button>
   <div id="m-corpo"></div>
 </div></dialog>
 
 <footer class="rodape">
-  <p>Observatório da Pós-Graduação da UFSCar · dados abertos da CAPES / Plataforma Sucupira (CC-BY). Os dados oficiais são os publicados pela CAPES e pela UFSCar.</p>
-  <p>Fontes: <a href="https://dadosabertos.capes.gov.br/" target="_blank" rel="noopener">Dados Abertos CAPES</a> · <a href="https://www.gov.br/capes/pt-br/acesso-a-informacao/acoes-e-programas/avaliacao/avaliacao-quadrienal/resultado-da-avaliacao-quadrienal-2021-2024" target="_blank" rel="noopener">Resultado da Avaliação Quadrienal</a> · Dados atualizados em <span id="gerado"></span>. <span id="status-rodape"></span></p>
+  <div class="rodape-in">
+    <section class="assinatura" aria-labelledby="rod-unid">
+      <h2 id="rod-unid">Identificação institucional</h2>
+      <ul class="marcas">
+        <li><a href="https://www.ufscar.br/" target="_blank" rel="noopener" class="marca marca-txt">Universidade Federal de São Carlos<span class="sr-only"> (abre em nova aba)</span></a></li>
+        <li><a href="https://www.propg.ufscar.br/" target="_blank" rel="noopener" class="marca"><img src="assets/propg.svg" alt="Pró-Reitoria de Pós-Graduação (ProPG/UFSCar)" height="44"></a></li>
+        <li><a href="https://www.proplan.ufscar.br/" target="_blank" rel="noopener" class="marca"><img src="assets/proplan.png" alt="Pró-Reitoria de Planejamento, Governança e Gestão (ProPlan/UFSCar)" height="44"></a></li>
+      </ul>
+    </section>
+    <div class="rodape-txt">
+      <p>Observatório da Pós-Graduação da UFSCar · dados abertos da CAPES / Plataforma Sucupira (CC-BY). Os dados oficiais são os publicados pela CAPES e pela UFSCar.</p>
+      <p>Fontes: <a href="https://dadosabertos.capes.gov.br/" target="_blank" rel="noopener">Dados Abertos CAPES</a> · <a href="https://www.gov.br/capes/pt-br/acesso-a-informacao/acoes-e-programas/avaliacao/avaliacao-quadrienal/resultado-da-avaliacao-quadrienal-2021-2024" target="_blank" rel="noopener">Resultado da Avaliação Quadrienal</a> · Dados atualizados em <span id="gerado"></span>. <span id="status-rodape"></span></p>
+      <p class="rodape-ds">Interface segundo os fundamentos do <a href="https://www.gov.br/ds/home" target="_blank" rel="noopener">Padrão Digital de Governo (gov.br DS)</a>.</p>
+    </div>
+  </div>
 </footer>
 <script src="app.js"></script>
 </body>
