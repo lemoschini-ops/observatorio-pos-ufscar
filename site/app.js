@@ -121,17 +121,18 @@ function destruir() { Object.values(charts).forEach(c => c.destroy()); for (cons
 
 // ------------------------------------------------------------ rótulos de dados
 if (window.ChartDataLabels) { Chart.register(ChartDataLabels); Chart.defaults.set("plugins.datalabels", { display: false }); }
-const lum = c => {
-  const m = String(c).match(/^#?([0-9a-f]{6})$/i); let r, g, b;
-  if (m) { const n = parseInt(m[1], 16); r = n >> 16 & 255; g = n >> 8 & 255; b = n & 255; }
-  else { [r, g, b] = (String(c).match(/\d+/g) || [0, 0, 0]).map(Number); }
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+// texto legível sobre uma cor: escolhe entre branco e azul-escuro pelo maior contraste (WCAG)
+const relLum = c => {
+  const m = String(c).match(/^#?([0-9a-f]{6})$/i); let rgb;
+  if (m) { const n = parseInt(m[1], 16); rgb = [n >> 16 & 255, n >> 8 & 255, n & 255]; } else rgb = (String(c).match(/\d+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+  const [r, g, b] = rgb.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
-const sobre = c => lum(c) > 0.6 ? "#1d3557" : "#ffffff";   // texto legível sobre a cor da barra
+const sobre = c => { const L = relLum(c); return 1.05 / (L + 0.05) >= (L + 0.05) / 0.0623 ? "#ffffff" : "#071d41"; };
 function rotulos(tipo, labels, datasets, o, dec, suf) {
   if (!S.rotulos || o.rotulos === false || !window.ChartDataLabels) return { display: false };
   const fv = v => v == null || Number.isNaN(+v) ? "" : fmt(+v, dec) + suf;
-  const base = { formatter: v => fv(v && typeof v === "object" ? (v.y ?? v.x) : v), font: { size: 10, weight: 700 }, clamp: true };
+  const base = { formatter: v => fv(v && typeof v === "object" ? (v.y ?? v.x) : v), font: { family: FONTE, size: 11, weight: 700 }, clamp: true };
   const nl = labels.length, nd = datasets.length, tit = cssVar("--tit"), card = cssVar("--card");
   if (tipo === "line") {
     return { ...base, color: tit, backgroundColor: card, borderRadius: 4, padding: 2, borderWidth: 1, borderColor: ctx => ctx.dataset.borderColor, align: "top", offset: 4,
@@ -153,37 +154,84 @@ function rotulos(tipo, labels, datasets, o, dec, suf) {
     display: ctx => dens <= 60 && ctx.dataset.data[ctx.dataIndex] != null };
 }
 
+/* ---------------------------------------------------------------------------
+   Sistema único de visualização (padrão gov.br DS)
+   - cores: só tokens CSS (--c-u/--c-se/--c-br para os grupos, --dv-1..9 categórica,
+     --dv-pos/neu/neg semânticas, --cc-* conceitos CAPES), recalculadas a cada render (tema);
+   - tipografia: Rawline, 12-14 px, rótulos de dados em negrito 11 px;
+   - eixos: grade só no eixo de valores, sem bordas, no máximo 6 marcas, números em pt-BR;
+   - legenda: em cima, à esquerda, com marcadores de forma (não depende só da cor);
+   - linhas: forma de marcador diferente por série, a série em foco (UFSCar) mais grossa;
+   - dica: fundo escuro com título e valores formatados;
+   - acessibilidade: canvas com role="img" e descrição; cada figura tem "Ver tabela" e "CSV". */
+const FONTE = "Rawline, Raleway, 'Segoe UI', Roboto, Arial, sans-serif";
+const FORMAS = ["circle", "rectRot", "triangle", "rect", "star", "crossRot", "rectRounded", "cross"];
+const DV = {};            // paleta resolvida para o tema atual
+let CORC = {};            // cor por conceito CAPES ("7".."1", "A")
+function aplicaTema() {
+  DV.cat = Array.from({ length: 9 }, (_, i) => cssVar(`--dv-${i + 1}`));
+  DV.pos = cssVar("--dv-pos"); DV.neu = cssVar("--dv-neu"); DV.neg = cssVar("--dv-neg");
+  DV.ink = cssVar("--ink"); DV.mut = cssVar("--mut"); DV.tit = cssVar("--tit"); DV.grid = cssVar("--grid"); DV.card = cssVar("--card");
+  DV.ttBg = cssVar("--tt-bg"); DV.ttInk = cssVar("--tt-ink");
+  const b = cssVar("--cc-12");
+  CORC = { "7": cssVar("--cc-7"), "6": cssVar("--cc-6"), "5": cssVar("--cc-5"), "4": cssVar("--cc-4"), "3": cssVar("--cc-3"), "2": b, "1": b, A: cssVar("--cc-a") };
+  if (window.Chart) {
+    Object.assign(Chart.defaults.font, { family: FONTE, size: 13 });
+    Chart.defaults.color = DV.mut;
+    Chart.defaults.borderColor = DV.grid;
+  }
+}
+const corConc = c => CORC[c] || DV.neu;
+const pinta = c => { const bg = corConc(c); return `background:${bg};color:${sobre(bg)}`; };
+// categórica genérica (categorias que não são os grupos UFSCar/Sudeste/Brasil): começa pelas cores que não se confundem com eles
+const CAT = () => [2, 3, 4, 6, 7, 0, 1, 8, 5].map(i => DV.cat[i]);
+const AZUL = () => DV.cat[0];   // série única: azul de ação
+
 function grafico(id, tipo, labels, datasets, o = {}) {
   const el = document.getElementById(id); if (!el) return;
-  Chart.defaults.font.family = '"Open Sans", Roboto, Arial, sans-serif';
-  const mut = cssVar("--mut"), grade = cssVar("--line"), dec = o.dec ?? 1, suf = o.suf || "";
-  const horiz = o.horizontal;
+  const mut = DV.mut, grade = DV.grid, dec = o.dec ?? 1, suf = o.suf || "";
+  const horiz = o.horizontal, rosca = tipo === "doughnut";
+  if (tipo === "line") datasets.forEach((d, i) => { d.pointStyle ??= FORMAS[i % FORMAS.length]; d.pointBackgroundColor ??= d.borderColor; });
+  const eixoValor = { color: mut, maxTicksLimit: 6, callback: v => fmt(v) + suf, font: { size: 12 } };
+  const eixoCat = { color: mut, font: { size: 12 }, autoSkipPadding: 8 };
   const c = new Chart(el, {
     type: tipo, data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false, indexAxis: horiz ? "y" : "x",
-      layout: { padding: tipo === "doughnut" ? 0 : { top: 22, right: horiz ? 34 : 14 } },
-      interaction: { mode: horiz ? "nearest" : "index", intersect: false },
+      animation: matchMedia("(prefers-reduced-motion: reduce)").matches ? false : { duration: 400 },
+      layout: { padding: rosca ? 0 : { top: 22, right: horiz ? 40 : tipo === "line" ? 30 : 14 } },
+      interaction: { mode: horiz || rosca ? "nearest" : "index", intersect: rosca },
       plugins: {
-        legend: { display: !!o.legend, labels: { color: mut, usePointStyle: true, boxWidth: 8 } },
+        legend: { display: !!o.legend, position: rosca ? "right" : "top", align: "start",
+          labels: { color: DV.ink, usePointStyle: true, pointStyleWidth: 12, boxHeight: 8, padding: 14, font: { size: 13 } } },
         datalabels: rotulos(tipo, labels, datasets, o, dec, suf),
-        tooltip: { callbacks: { label: x => `${x.dataset.label}: ${fmt(typeof x.parsed === 'number' ? x.parsed : horiz ? x.parsed.x : x.parsed.y, dec)}${suf}` } },
+        tooltip: { backgroundColor: DV.ttBg, titleColor: DV.ttInk, bodyColor: DV.ttInk, footerColor: DV.ttInk, padding: 10, cornerRadius: 6, boxPadding: 4, usePointStyle: true,
+          titleFont: { family: FONTE, size: 13, weight: 700 }, bodyFont: { family: FONTE, size: 13 },
+          callbacks: { label: x => `${x.dataset.label ?? x.label}: ${fmt(typeof x.parsed === "number" ? x.parsed : horiz ? x.parsed.x : x.parsed.y, dec)}${suf}` } },
       },
-      scales: {
-        x: { stacked: !!o.stacked, ticks: horiz ? { color: mut, callback: v => fmt(v) + suf } : { color: mut }, grid: { color: grade } },
-        y: { stacked: !!o.stacked, beginAtZero: o.zero ?? (tipo === "bar"), ticks: horiz ? { color: mut } : { color: mut, callback: v => fmt(v) + suf }, grid: { color: grade } },
+      scales: rosca ? {} : {
+        x: { stacked: !!o.stacked, border: { display: false }, ticks: horiz ? eixoValor : eixoCat, grid: { display: !!horiz, color: grade } },
+        y: { stacked: !!o.stacked, border: { display: false }, beginAtZero: o.zero ?? (tipo === "bar"), ticks: horiz ? eixoCat : eixoValor, grid: { display: !horiz, color: grade } },
       },
       onClick: o.onClick,
     },
   });
   charts[id] = c;
+  descreve(el, labels, datasets);
   if (datasets.every(d => (d.data || []).every(v => v == null || v === 0)))
     el.parentElement.insertAdjacentHTML("beforeend", '<div class="state" style="position:absolute;inset:0">Sem dados para os filtros atuais.</div>');
   return c;
 }
-const linha = (nome, cor, data, forte) => ({ label: nome, data, borderColor: cor, backgroundColor: cor, borderWidth: forte ? 3.5 : 2, pointRadius: forte ? 3 : 2, pointHoverRadius: 5, tension: .25, spanGaps: true });
-const barra = (nome, cor, data) => ({ label: nome, data, backgroundColor: cor, borderRadius: 3 });
-const CAT = () => [cssVar("--c-se"), cssVar("--c-br"), cssVar("--c-u"), "#6db3f2", "#0f4a85", "#8aa4c8", "#c9a227", "#5d6877", "#a5c8ea"];
+// descrição acessível do gráfico: título + subtítulo do cartão e resumo das séries
+function descreve(el, labels, datasets) {
+  const card = el.closest(".card, .modal-in"), t = card?.querySelector("h3, h2")?.textContent?.trim() || "Gráfico";
+  const ant = el.closest(".graf")?.previousElementSibling, s = (ant?.matches(".sub") ? ant : card?.querySelector(".sub"))?.textContent?.trim();
+  const series = datasets.map(d => d.label).filter(Boolean);
+  el.setAttribute("role", "img");
+  el.setAttribute("aria-label", `${t}${s ? ". " + s : ""}. ${series.length ? "Séries: " + series.join(", ") + ". " : ""}${labels.length} categorias, de ${labels[0] ?? "–"} a ${labels.at(-1) ?? "–"}.${card?.matches(".card") ? " Use o botão Ver tabela para ler os valores." : ""}`);
+}
+const linha = (nome, cor, data, forte) => ({ label: nome, data, borderColor: cor, backgroundColor: cor, borderWidth: forte ? 3.5 : 2, pointRadius: forte ? 3.5 : 2.5, pointHoverRadius: 6, tension: .25, spanGaps: true, order: forte ? 0 : 1 });
+const barra = (nome, cor, data) => ({ label: nome, data, backgroundColor: cor, borderRadius: 2, maxBarThickness: 48 });
 const cores = () => GRUPOS.map(g => cssVar(g.cor));
 let GRUPOS = [];
 
@@ -321,7 +369,7 @@ ABAS.serie = el => {
   const pal = CAT();
   grafico("s-ga", "bar", lab, gas.map((ga, i) => barra(cap(ga), pal[i % pal.length], anos.map(a => sum(rows("disc_a", a, gu, { area: false }).filter(r => r.sit === "MATRICULADO" && r.ga === ga))))), { stacked: true, dec: 0, legend: true });
   const nv = f => anos.map(a => sum(rows("disc_a", a, gu, { grau: false }).filter(r => r.sit === "MATRICULADO" && f(r.grau))));
-  grafico("s-nv", "bar", lab, [barra("Mestrado", cssVar("--c-se"), nv(g => g.includes("MESTRADO"))), barra("Doutorado", cssVar("--c-u"), nv(g => g.includes("DOUTORADO")))], { stacked: true, dec: 0, legend: true });
+  grafico("s-nv", "bar", lab, [barra("Mestrado", CAT()[0], nv(g => g.includes("MESTRADO"))), barra("Doutorado", CAT()[1], nv(g => g.includes("DOUTORADO")))], { stacked: true, dec: 0, legend: true });
 };
 
 // ---------- helpers de cartões ----------
@@ -357,7 +405,7 @@ ABAS.discentes = el => {
     </div>`;
   ["mat", "ing", "concl", "pdout", "meses", "estr"].forEach((k, i) => desenhaSerie(["d1", "d2", "d4", "d5", "d6", "d9"][i], k));
   const anos = anosRange(), gu = GRUPOS[0];
-  grafico("d3", "bar", anos.map(String), [barra("Ingressantes", cssVar("--c-se"), serieDe("ing", gu, anos)), barra("Titulados", "#2da44e", serieDe("tit", gu, anos)), barra("Desligados e abandonos", cssVar("--bad"), serieDe("des", gu, anos))], { dec: 0, legend: true });
+  grafico("d3", "bar", anos.map(String), [barra("Ingressantes", AZUL(), serieDe("ing", gu, anos)), barra("Titulados", DV.pos, serieDe("tit", gu, anos)), barra("Desligados e abandonos", DV.neg, serieDe("des", gu, anos))], { dec: 0, legend: true });
   distribuicao("d7", "disc_b", r => r.sit === "MATRICULADO", "faixa", { ordem: ordemFaixa, rotulo: s => s.replace(" ANOS", "").replace("A", "a").toLowerCase() });
   distribuicao("d8", "disc_a", r => r.sit === "MATRICULADO", "ga", { topo: 9, semArea: true });
 };
@@ -371,8 +419,8 @@ ABAS.docentes = el => {
     <article class="card"><h3>Faixa etária dos docentes</h3><p class="sub">% em ${S.ano}</p><div class="graf"><canvas id="p8"></canvas></div></article>
     <article class="card"><h3>Categoria dos docentes</h3><p class="sub">% em ${S.ano}</p><div class="graf"><canvas id="p9"></canvas></div></article></div>`;
   ["perm", "razao", "dr", "dex", "bolsa", "ext"].forEach((k, i) => desenhaSerie(["p1", "p2", "p4", "p5", "p6", "p7"][i], k));
-  const anos = anosRange(), gu = GRUPOS[0], cor = ["--c-u", "--c-se", "--c-br"];
-  grafico("p3", "bar", anos.map(String), ["PERMANENTE", "COLABORADOR", "VISITANTE"].map((c, i) => barra(cap(c), cssVar(cor[i]), anos.map(a => sum(rows("doc_a", a, gu).filter(r => r.cat === c))))), { stacked: true, dec: 0, legend: true });
+  const anos = anosRange(), gu = GRUPOS[0];
+  grafico("p3", "bar", anos.map(String), ["PERMANENTE", "COLABORADOR", "VISITANTE"].map((c, i) => barra(cap(c), CAT()[i],anos.map(a => sum(rows("doc_a", a, gu).filter(r => r.cat === c))))), { stacked: true, dec: 0, legend: true });
   distribuicao("p8", "doc_b", () => true, "faixa", { ordem: ordemFaixa, rotulo: s => s.replace(" ANOS", "").replace("A", "a").toLowerCase() });
   distribuicao("p9", "doc_a", () => true, "cat");
 };
@@ -386,8 +434,8 @@ function programas() {
   Object.values(PROGS).forEach(p => { const u = p.anos[Math.max(...Object.keys(p.anos))]; Object.assign(p, { nome: u.nome, rede: Object.values(p.anos).some(x => x.rede), papel: u.papel, ultimo: u }); });
   return PROGS;
 }
-const CORC = { "7": "#be185d", "6": "#7c3aed", "5": "#2563eb", "4": "#38a1db", "3": "#94a3b8", "2": "#b08968", "1": "#b08968", A: "#0d9488" };
-const hc = c => `<i class="hc" style="background:${CORC[c] || "#94a3b8"}">${esc(c)}</i>`;
+const hc = c => `<i class="hc" style="${pinta(c)}">${esc(c)}</i>`;
+const tlinha = p => `<div class="tl" role="img" aria-label="Conceito por ano: ${ANOS.map(a => `${a} ${p.anos[a] ? p.anos[a].conc : "sem registro"}`).join(", ")}">${ANOS.map(a => `<i style="${p.anos[a] ? pinta(p.anos[a].conc) : "background:var(--line-2);color:var(--mut)"}" title="${a}">${p.anos[a] ? p.anos[a].conc : "·"}</i>`).join("")}</div>`;
 // anos de existência: sempre pela data em que o painel é visualizado
 const idade = ini => (+ini ? new Date().getFullYear() - +ini : null);
 const selo = ini => { const n = idade(ini); return n == null ? "" : `<span class="selo" title="Existe desde ${esc(ini)}; contado até ${new Date().getFullYear()}"><b>${n < 1 ? "Novo" : n}</b>${n < 1 ? "" : `<small>${n === 1 ? "ano" : "anos"}</small>`}</span>`; };
@@ -431,13 +479,13 @@ ABAS.programas = el => {
     const rede = !sede(p);
     const st = siteDe(p.cod);
     return `<article class="ppg">
-      <div class="ppg-top">${selo(r.inicio)}<span class="nota" style="background:${n != null ? CORC[n] : "var(--line)"};${n == null ? "color:var(--mut)" : ""}" title="Conceito CAPES 2025 (Quadrienal)">${n ?? "–"}</span>
+      <div class="ppg-top">${selo(r.inicio)}<span class="nota" style="${n != null ? pinta(String(n)) : "background:var(--line-2);color:var(--mut)"}" title="Conceito CAPES 2025 (Quadrienal)" aria-label="Conceito CAPES 2025: ${n ?? "sem nota"}">${n ?? "–"}</span>
         <div><h3><a class="ppg-link" href="${esc(st.url)}" target="_blank" rel="noopener" title="${st.geral ? "Abrir a página dos programas da UFSCar (ProPG)" : "Abrir o site do programa em ufscar.br"}">${esc(cap(r.nome))}</a></h3><small>${esc(cap(r.area || r.ga))} · ${esc(r.grau.replace("MESTRADO PROFISSIONAL", "Mestrado prof.").replace("DOUTORADO PROFISSIONAL", "Doutorado prof.").replace("MESTRADO/DOUTORADO", "Mestrado e doutorado").replace(/^MESTRADO$/, "Mestrado").replace(/^DOUTORADO$/, "Doutorado"))}</small></div></div>
       <div class="ppg-tags"><span class="tag ${rede ? "assoc" : "sede"}">${rede ? "Rede · UFSCar associada" : "UFSCar" + (r.rede ? " · sede de rede" : "")}</span><span class="tag">${esc(rede ? "Coord.: " + r.ies : campusDe(r.mun))}</span>${r.inicio ? `<span class="tag" title="Ano de criação do programa">Criado em ${esc(r.inicio)}</span>` : ""}</div>
       <div class="ppg-ref"><span><b>Conceito 2025:</b> ${n ?? "sem nota"}${dif != null ? ` <span class="d ${dif > 0 ? "up" : dif < 0 ? "dn" : ""}">${dif > 0 ? "▲ +" : dif < 0 ? "▼ " : "= "}${dif}</span>` : ""}${q?.desat ? ' <span class="tag">doutorado a desativar</span>' : ""}</span>
         <span class="mut">${A}: ${hc(r.conc)}${ant != null ? ` · anterior ${ant}` : ""}</span></div>
       <div class="nums"><div><b>${fmt(mat)}</b><span>matric.</span></div><div><b>${fmt(tit)}</b><span>titulados</span></div><div><b>${fmt(perm)}</b><span>docentes perm.</span></div></div>
-      ${sparkline(ANOS.map(a => D.serie[p.cod]?.[a]?.mat ?? null), cssVar("--c-se"))}
+      ${sparkline(ANOS.map(a => D.serie[p.cod]?.[a]?.mat ?? null), cssVar("--c-u"))}
       ${rede ? '<div class="mut" style="font-size:11px">Números da rede inteira</div>' : ""}
       <div class="ppg-rodape"><span class="ppg-site">${st.geral ? "Página dos programas (ProPG) ↗" : "Site do programa ↗"}</span><button class="ppg-traj" data-c="${p.cod}" title="Ver a trajetória do programa">Trajetória</button></div></article>`;
   };
@@ -448,7 +496,7 @@ ABAS.programas = el => {
 
   el.innerHTML = `<h2 class="sec">Programas de pós-graduação da UFSCar</h2>
     <p class="sub">Referência: <b>Conceito CAPES 2025</b> (Avaliação Quadrienal, resultado de 05/2026). Em <b>${A}</b> são <b>${base.length}</b> programas: <b>${nSede}</b> da UFSCar e <b>${nRede}</b> em rede com a UFSCar associada.${semNota ? ` ${semNota} sem nota na planilha da Quadrienal.` : ""} Nos cartões dos programas em rede, matriculados, titulados e docentes são da rede inteira e não entram nos totais da UFSCar.</p>
-    <div class="chips" style="margin-bottom:10px">${dist.map(([n, c]) => `<button class="chip ${S.conc === String(n) ? "on" : ""}" data-n="${n}"><i class="dot" style="background:${CORC[n]}"></i>Conceito ${n}: ${c}</button>`).join("")}${semNota ? `<button class="chip ${S.conc === "sem" ? "on" : ""}" data-n="sem">Sem nota: ${semNota}</button>` : ""}</div>
+    <div class="chips" style="margin-bottom:10px">${dist.map(([n, c]) => `<button class="chip ${S.conc === String(n) ? "on" : ""}" data-n="${n}" aria-pressed="${S.conc === String(n)}"><i class="dot" style="background:${corConc(String(n))};box-shadow:0 0 0 1px var(--card)"></i>Conceito ${n}: ${c}</button>`).join("")}${semNota ? `<button class="chip ${S.conc === "sem" ? "on" : ""}" data-n="sem">Sem nota: ${semNota}</button>` : ""}</div>
     <div class="campi" role="group" aria-label="Filtrar por campus"><span class="campi-t">Campus</span>
       <button class="chip ${!S.mun ? "on" : ""}" data-m="">Todos (${base.length})</button>
       ${campiOrd.map(([c, n]) => `<button class="chip ${S.mun === c ? "on" : ""}" data-m="${esc(c)}">${esc(c)} (${n})</button>`).join("")}
@@ -462,6 +510,18 @@ ABAS.programas = el => {
       <button class="btn" id="pg-csv">Baixar CSV</button>
     </div>
     ${corpo}
+    <h2 class="sec">Panorama 3D: porte, corpo docente e conceito</h2>
+    <article class="card" id="p3d-card"><h3>Programas da UFSCar em três dimensões</h3>
+      <p class="sub">Cada ponto é um programa da UFSCar em ${A}: <b>docentes permanentes</b> (eixo X), <b>discentes matriculados</b> (eixo Y) e <b>Conceito CAPES 2025</b> (eixo Z, altura). Cor = grande área; tamanho = titulados no ano. A sombra no piso mostra o porte (docentes × matriculados). Arraste para girar, role para aproximar e passe o mouse para ver o programa. Acompanha os filtros de área, nível e ano.</p>
+      <div class="p3d-ctrl" role="group" aria-label="Pontos de vista do gráfico 3D"><span class="rot">Ver de:</span>
+        <button type="button" class="btn mini" data-v="persp" aria-pressed="true">Perspectiva</button>
+        <button type="button" class="btn mini" data-v="porte" aria-pressed="false">Cima: docentes × matriculados</button>
+        <button type="button" class="btn mini" data-v="matc" aria-pressed="false">Lado: matriculados × conceito</button>
+        <button type="button" class="btn mini" data-v="docc" aria-pressed="false">Frente: docentes × conceito</button>
+        <button type="button" class="btn-outline mini" id="p3d-tab" aria-expanded="false">Ver tabela</button></div>
+      <div class="p3d" id="p3d" role="img" aria-label="Gráfico 3D dos programas da UFSCar; a mesma informação está na tabela do botão Ver tabela e no resumo abaixo."><div class="p3d-fallback">Carregando a visualização 3D…</div></div>
+      <p class="sub" id="p3d-resumo" style="margin:.75rem 0 0"></p>
+    </article>
     <h2 class="sec">Evolução dos conceitos CAPES</h2><p class="sub">Conceito de cada programa por ano; a última coluna é o Conceito 2025 (A = programa novo ainda sem avaliação plena).</p>
     <div class="tabela-wrap"><table id="pg-heat"></table></div>
     <div class="grade" style="margin-top:14px">
@@ -490,29 +550,108 @@ ABAS.programas = el => {
   grafico("pg-g1", "bar", cs.map(c => "Nota " + c), GRUPOS.map((g, i) => barra(i === 0 ? "UFSCar (programas da UFSCar)" : g.nome, cssVar(g.cor), cs.map(c => pct(qr[i].filter(r => r.nota === c).length, qr[i].length)))), { suf: "%", legend: true });
   const porMun = {}; propios.forEach(p => { const c = campusDe(p.anos[A].mun); porMun[c] = (porMun[c] || 0) + 1; });
   const ms = Object.entries(porMun).sort((a, b) => b[1] - a[1]);
-  grafico("pg-g2", "doughnut", ms.map(m => m[0]), [{ data: ms.map(m => m[1]), backgroundColor: CAT(), borderWidth: 0 }], { legend: true, dec: 0 });
-  charts["pg-g2"].options.scales = {}; charts["pg-g2"].update();
+  grafico("pg-g2", "doughnut", ms.map(m => m[0]), [{ label: "Programas", data: ms.map(m => m[1]), backgroundColor: CAT(), borderWidth: 2, borderColor: DV.card }], { legend: true, dec: 0 });
+  panorama3d(propios.map(p => ({ p, r: p.anos[A], nota: notaQ(p), mat: ser(p, "mat"), perm: ser(p, "perm"), tit: ser(p, "tit") })), A);
 };
+
+// ---------- Panorama 3D dos programas (Plotly gl3d, carregado só quando a aba Programas abre) ----------
+const PLOTLY_URL = "https://cdn.jsdelivr.net/npm/plotly.js-gl3d-dist-min@2.35.2/plotly-gl3d.min.js";
+let plotlyP = null, P3D = null;
+const carregaPlotly = () => plotlyP ??= new Promise((ok, erro) => {
+  if (window.Plotly) return ok(window.Plotly);
+  const s = document.createElement("script"); s.src = PLOTLY_URL; s.async = true; s.crossOrigin = "anonymous";
+  s.onload = () => window.Plotly ? ok(window.Plotly) : erro(new Error("biblioteca 3D indisponível"));
+  s.onerror = () => { plotlyP = null; erro(new Error("não foi possível carregar a biblioteca 3D")); };
+  document.head.append(s);
+});
+const temWebGL = () => { try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch { return false; } };
+function destruir3d() { if (P3D && window.Plotly) { try { Plotly.purge(P3D); } catch { } } P3D = null; }
+const VISTAS = {
+  persp: { eye: { x: 1.25, y: -1.35, z: 0.7 }, up: { x: 0, y: 0, z: 1 }, center: { x: 0, y: 0, z: 0 } },
+  // vistas quase planas: câmera alinhada a um eixo, para ler os outros dois
+  porte: { eye: { x: 0, y: -0.01, z: 2.3 }, up: { x: 0, y: 1, z: 0 }, center: { x: 0, y: 0, z: 0 } },
+  matc: { eye: { x: 2.3, y: 0, z: 0.1 }, up: { x: 0, y: 0, z: 1 }, center: { x: 0, y: 0, z: 0 } },
+  docc: { eye: { x: 0, y: -2.3, z: 0.1 }, up: { x: 0, y: 0, z: 1 }, center: { x: 0, y: 0, z: 0 } },
+};
+const pearson = (xs, ys) => { const n = xs.length; if (n < 3) return null; const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n; let sxy = 0, sx = 0, sy = 0; xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sx += (x - mx) ** 2; sy += (ys[i] - my) ** 2; }); return sx && sy ? sxy / Math.sqrt(sx * sy) : null; };
+function panorama3d(itens, A) {
+  const box = $("#p3d"), card = $("#p3d-card"); if (!box) return;
+  const ok = itens.filter(i => i.nota != null && i.mat != null && i.perm != null);
+  const fora = itens.length - ok.length;
+  // resumo textual (também é a descrição para leitores de tela)
+  const media = (l, k) => l.length ? l.reduce((s, i) => s + (i[k] || 0), 0) / l.length : null;
+  const alto = ok.filter(i => i.nota >= 6), medio = ok.filter(i => i.nota === 5), base = ok.filter(i => i.nota <= 4);
+  const r = pearson(ok.map(i => i.perm), ok.map(i => i.mat));
+  const faixa = (t, l) => l.length ? `${t} (${l.length}): em média ${fmt(media(l, "mat"))} matriculados e ${fmt(media(l, "perm"))} docentes permanentes` : "";
+  $("#p3d-resumo").innerHTML = ok.length ? `<b>Leitura:</b> ${[faixa("conceito 6 ou 7", alto), faixa("conceito 5", medio), faixa("conceito 3 ou 4", base)].filter(Boolean).join("; ")}.` +
+    (r != null ? ` Correlação entre docentes permanentes e matriculados: <b>r = ${fmt(r, 2)}</b>.` : "") + (fora ? ` ${fora} programa(s) sem nota na Quadrienal ou sem dados de ${A} ficam fora do gráfico.` : "") : "Nenhum programa com nota e dados para os filtros atuais.";
+  // tabela alternativa
+  $("#p3d-tab").onclick = e => {
+    const b = e.currentTarget, t = card.querySelector(".fig-tab");
+    if (t) { t.remove(); b.setAttribute("aria-expanded", "false"); b.textContent = "Ver tabela"; return; }
+    const div = document.createElement("div"); div.className = "fig-tab";
+    div.innerHTML = `<table><caption>Programas da UFSCar em ${A}: dados do gráfico 3D</caption><thead><tr><th class="t" scope="col">Programa</th><th class="t" scope="col">Grande área</th><th scope="col">Docentes perm. (X)</th><th scope="col">Matriculados (Y)</th><th scope="col">Conceito 2025 (Z)</th><th scope="col">Titulados</th></tr></thead><tbody>` +
+      [...ok].sort((x, y) => y.nota - x.nota || y.mat - x.mat).map(i => `<tr><td class="t">${esc(cap(i.r.nome))}</td><td class="t">${esc(cap(i.r.ga))}</td><td>${fmt(i.perm)}</td><td>${fmt(i.mat)}</td><td>${hc(String(i.nota))}</td><td>${fmt(i.tit)}</td></tr>`).join("") + "</tbody></table>";
+    box.after(div); b.setAttribute("aria-expanded", "true"); b.textContent = "Ocultar tabela";
+  };
+  const falha = msg => { box.innerHTML = `<div class="p3d-fallback"><p>${esc(msg)}<br>Os mesmos dados estão na tabela (botão <b>Ver tabela</b>) e no resumo abaixo.</p></div>`; card.querySelectorAll(".p3d-ctrl [data-v]").forEach(b => b.disabled = true); };
+  if (!ok.length) return falha("Nenhum programa com nota e dados para os filtros atuais.");
+  if (!temWebGL()) return falha("Este navegador não oferece WebGL, necessário para a visualização 3D.");
+  const tab = S.tab;
+  carregaPlotly().then(Plotly => {
+    if (S.tab !== tab || !document.body.contains(box)) return;     // o usuário mudou de aba enquanto carregava
+    const areas = [...new Set(ok.map(i => i.r.ga))].sort((a, b) => a.localeCompare(b, "pt")), pal = CAT();
+    const tMax = Math.max(1, ...ok.map(i => i.tit || 0));
+    const eixo = (titulo, extra = {}) => ({ title: { text: titulo, font: { size: 13, color: DV.ink } }, color: DV.mut, gridcolor: DV.grid, zerolinecolor: DV.grid, backgroundcolor: "rgba(0,0,0,0)", showbackground: true, tickfont: { size: 11 }, separatethousands: true, ...extra });
+    const traces = areas.map((ga, k) => { const l = ok.filter(i => i.r.ga === ga); return {
+      type: "scatter3d", mode: "markers", name: cap(ga),
+      x: l.map(i => i.perm), y: l.map(i => i.mat), z: l.map(i => i.nota),
+      text: l.map(i => cap(i.r.nome)), customdata: l.map(i => [fmt(i.tit), cap(i.r.grau)]),
+      hovertemplate: "<b>%{text}</b><br>%{customdata[1]}<br>Docentes permanentes: %{x}<br>Matriculados: %{y}<br>Conceito 2025: %{z}<br>Titulados: %{customdata[0]}<extra>%{fullData.name}</extra>",
+      marker: { size: l.map(i => 7 + 17 * Math.sqrt((i.tit || 0) / tMax)), color: pal[k % pal.length], opacity: 0.9, line: { color: DV.card, width: 1 } },
+      projection: { z: { show: true, opacity: 0.25, scale: 0.6 } },
+    }; });
+    const layout = {
+      paper_bgcolor: "rgba(0,0,0,0)", font: { family: FONTE, color: DV.ink, size: 12 }, margin: { l: 0, r: 0, t: 0, b: 70 },
+      hoverlabel: { bgcolor: DV.ttBg, bordercolor: DV.ttBg, font: { family: FONTE, color: DV.ttInk, size: 13 } },
+      legend: { orientation: "h", x: 0, y: 0, yanchor: "top", font: { size: 12 }, itemsizing: "constant", itemclick: "toggle", itemdoubleclick: "toggleothers", bgcolor: "rgba(0,0,0,0)" },
+      scene: {
+        xaxis: eixo("Docentes permanentes", { rangemode: "tozero" }), yaxis: eixo("Matriculados", { rangemode: "tozero" }),
+        zaxis: eixo("Conceito 2025", { range: [2.5, 7.5], tickvals: [3, 4, 5, 6, 7], dtick: 1 }),
+        aspectmode: "manual", aspectratio: { x: 1.1, y: 1.1, z: 0.75 }, camera: VISTAS.persp, dragmode: "turntable",
+      },
+    };
+    box.innerHTML = "";
+    return Plotly.newPlot(box, traces, layout, { responsive: true, displaylogo: false, locale: "pt-BR", modeBarButtonsToRemove: ["toImage", "resetCameraLastSave3d"], toImageButtonOptions: { filename: "panorama3d_programas" } }).then(() => {
+      P3D = box;
+      card.querySelectorAll(".p3d-ctrl [data-v]").forEach(b => b.onclick = () => {
+        card.querySelectorAll(".p3d-ctrl [data-v]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+        Plotly.relayout(box, { "scene.camera": VISTAS[b.dataset.v] });
+      });
+    });
+  }).catch(e => falha(`A visualização 3D não pôde ser exibida (${e.message}).`));
+}
 
 function abrirPrograma(cod) {
   const p = programas()[cod]; if (!p) return;
   const ser = D.serie[cod] || {}, u = p.ultimo, anosP = ANOS.filter(a => p.anos[a] || ser[a]), rede = p.rede;
   const v = (a, k) => ser[a]?.[k] ?? null;
   const ref = p.anos[S.ano] || u;
-  $("#m-corpo").innerHTML = `<h2>${esc(cap(p.nome))}</h2>
+  $("#m-corpo").innerHTML = `<h2 id="m-titulo">${esc(cap(p.nome))}</h2>
     <p><a class="btn" style="text-decoration:none;display:inline-block" href="${esc(siteDe(cod).url)}" target="_blank" rel="noopener">${siteDe(cod).geral ? "Página dos programas da UFSCar ↗" : "Site do programa ↗"}</a></p>
     <p><span class="tag ${p.papel === "sede" ? "sede" : "assoc"}">${p.papel === "sede" ? "UFSCar é a sede" : "UFSCar é associada"}</span> ${rede ? '<span class="tag">Programa em rede</span>' : ""}
       <span class="tag">${esc(cap(ref.grau))}</span> <span class="tag">${esc(cap(ref.ga))}</span> <span class="tag">${esc(cap(ref.mun))}</span> ${u.inicio ? `<span class="tag">Início ${esc(u.inicio)}</span> ${selo(u.inicio)}` : ""}</p>
     ${rede ? `<p class="sub">Coordenação: <b>${esc(u.ies)}</b>${u.associadas.length ? ` · Associadas: ${esc(u.associadas.join(", "))}` : ""}. Os números abaixo cobrem a rede inteira, não só a UFSCar.</p>` : ""}
-    <div class="tl">${ANOS.map(a => `<i style="background:${p.anos[a] ? CORC[p.anos[a].conc] || "#94a3b8" : "var(--line)"}" title="${a}">${p.anos[a] ? p.anos[a].conc : "·"}</i>`).join("")}</div>
+    ${tlinha(p)}
     <p class="sub">Conceito por ano (${ANOS[0]} a ${ANOS.at(-1)}).</p>
     ${D.qmap[cod] ? `<p>Resultado da Quadrienal (05/2026): ${hc(String(D.qmap[cod].nota))} <span class="sub">anterior: ${esc(D.qmap[cod].ant || "–")}${D.qmap[cod].n2 != null ? " · nota reconsiderada" : ""}${D.qmap[cod].desat ? " · CTC-ES recomenda desativar o doutorado" : ""}</span></p>` : ""}
+    <p class="sub">Matriculados, titulados, docentes permanentes e ingressantes por ano</p>
     <div class="graf alto"><canvas id="m-g"></canvas></div>`;
   $("#modal").showModal();
-  const serie = (k, nome, cor) => linha(nome, cor, ANOS.map(a => v(a, k)));
+  const serie = (k, nome, cor, forte) => linha(nome, cor, ANOS.map(a => v(a, k)), forte);
   destruirModal();
-  charts["m-g"] = new Chart($("#m-g"), { type: "line", data: { labels: ANOS.map(String), datasets: [serie("mat", "Matriculados", cssVar("--c-u")), serie("tit", "Titulados", "#2da44e"), serie("perm", "Docentes permanentes", cssVar("--c-se")), serie("ing", "Ingressantes", "#e8a317")] },
-    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, layout: { padding: { top: 22, right: 14 } }, plugins: { legend: { labels: { color: cssVar("--mut"), usePointStyle: true, boxWidth: 8 } }, datalabels: S.rotulos && window.ChartDataLabels ? { color: cssVar("--tit"), backgroundColor: cssVar("--card"), borderRadius: 4, padding: 2, borderWidth: 1, borderColor: c => c.dataset.borderColor, font: { size: 10, weight: 700 }, align: "top", offset: 4, formatter: v => fmt(v), display: c => { const d = c.dataset.data; let l = d.length - 1; while (l > 0 && d[l] == null) l--; return d[c.dataIndex] != null && c.dataIndex === l; } } : { display: false } }, scales: { x: { ticks: { color: cssVar("--mut") }, grid: { color: cssVar("--line") } }, y: { beginAtZero: true, ticks: { color: cssVar("--mut") }, grid: { color: cssVar("--line") } } } } });
+  const cat = CAT();
+  grafico("m-g", "line", ANOS.map(String), [serie("mat", "Matriculados", cssVar("--c-u"), true), serie("tit", "Titulados", cat[0]), serie("perm", "Docentes permanentes", cat[1]), serie("ing", "Ingressantes", cat[2])], { dec: 0, legend: true, zero: true });
 }
 function destruirModal() { charts["m-g"]?.destroy(); delete charts["m-g"]; }
 
@@ -615,18 +754,18 @@ ABAS.quadrienal = el => {
 
   // gráficos
   const cats = [["1 e 2", r => r.nota <= 2], ["Nota 3", r => r.nota === 3], ["Nota 4", r => r.nota === 4], ["Nota 5", r => r.nota === 5], ["Nota 6", r => r.nota === 6], ["Nota 7", r => r.nota === 7]];
-  grafico("q0", "bar", [3, 4, 5, 6, 7].map(n => "Nota " + n), [barra("Programas", cssVar("--c-br"), [3, 4, 5, 6, 7].map(n => comN.filter(r => r.nota === n).length))], { dec: 0 });
+  grafico("q0", "bar", [3, 4, 5, 6, 7].map(n => "Nota " + n), [barra("Programas", [3, 4, 5, 6, 7].map(n => corConc(String(n))), [3, 4, 5, 6, 7].map(n => comN.filter(r => r.nota === n).length))], { dec: 0 });
   grafico("q1", "bar", cats.map(c => c[0]), GRUPOS.map((g, i) => barra(g.nome, cssVar(g.cor), cats.map(c => pct(rs[i].filter(c[1]).length, rs[i].length)))), { suf: "%", legend: true });
-  grafico("q2", "bar", GRUPOS.map(g => g.nome), [["Subiram", st.map(s => pct(s.sobe, s.cmp)), "#2da44e"], ["Mantiveram", st.map(s => pct(s.igual, s.cmp)), "#94a3b8"], ["Caíram", st.map(s => pct(s.cai, s.cmp)), "#d64545"]].map(([n, d, c]) => barra(n, c, d)), { stacked: true, suf: "%", legend: true, horizontal: true });
+  grafico("q2", "bar", GRUPOS.map(g => g.nome), [["Subiram", st.map(s => pct(s.sobe, s.cmp)), DV.pos], ["Mantiveram", st.map(s => pct(s.igual, s.cmp)), DV.neu], ["Caíram", st.map(s => pct(s.cai, s.cmp)), DV.neg]].map(([n, d, c]) => barra(n, c, d)), { stacked: true, suf: "%", legend: true, horizontal: true });
   const cmpU = x.filter(r => isNum(r.ant)), ns = [3, 4, 5, 6, 7];
-  grafico("q3", "bar", ns.map(c => "Nota " + c), [barra("Conceito anterior", cssVar("--c-br"), ns.map(c => cmpU.filter(r => +r.ant === c).length)), barra("Quadrienal 2025", cssVar("--c-u"), ns.map(c => x.filter(r => r.nota === c).length))], { dec: 0, legend: true });
+  grafico("q3", "bar", ns.map(c => "Nota " + c), [barra("Conceito anterior", DV.neu, ns.map(c => cmpU.filter(r => +r.ant === c).length)), barra("Quadrienal 2025", AZUL(),ns.map(c => x.filter(r => r.nota === c).length))], { dec: 0, legend: true });
   // ciclos: conceito por ano-base (programas com sede na seleção) + nota 2025
   const sedes = new Set(x.filter(r => r.vinc !== "Rede").map(r => r.cod)), anosC = [...ANOS.map(String), "2025"];
   const cont = c => anosC.map(a => a === "2025" ? (c === "A" ? 0 : x.filter(r => r.vinc !== "Rede" && r.nota === +c).length)
     : Object.values(programas()).filter(p => sedes.has(p.cod) && p.anos[+a] && String(p.anos[+a].conc) === String(c)).length);
-  grafico("q4", "bar", anosC, ["A", 2, 3, 4, 5, 6, 7].map(c => barra(c === "A" ? "Novo (sem nota)" : "Nota " + c, CORC[c] || "#94a3b8", cont(c))), { stacked: true, dec: 0, legend: true });
+  grafico("q4", "bar", anosC, ["A", 2, 3, 4, 5, 6, 7].map(c => barra(c === "A" ? "Novo (sem nota)" : "Nota " + c, corConc(String(c)), cont(c))), { stacked: true, dec: 0, legend: true });
   const porGa = Object.entries(comN.reduce((m, r) => ((m[r.ga] ??= []).push(r.nota), m), {})).map(([l, v]) => [cap(l), mediaN(v), v.length]).sort((a, b) => b[1] - a[1]);
-  grafico("q5", "bar", porGa.map(([l, , n]) => `${l} (${n})`), [barra("Nota média", cssVar("--c-se"), porGa.map(r => r[1]))], { dec: 2, horizontal: true });
+  grafico("q5", "bar", porGa.map(([l, , n]) => `${l} (${n})`), [barra("Nota média", AZUL(), porGa.map(r => r[1]))], { dec: 2, horizontal: true });
   charts.q5.options.scales.x.max = 7; charts.q5.options.scales.x.min = 0; charts.q5.update();
 
   // tabelas
@@ -677,13 +816,13 @@ ABAS.lato = el => {
   const x = E.filter(r => (!f.sit || r.sit === f.sit) && (!f.mod || r.modalidade === f.mod) && (!f.area || r.area === f.area) && (!f.camp || r.campus === f.camp) && (!f.q || sa(r.nome).includes(sa(f.q))));
   const at = E.filter(r => r.sit === "Ativo"), kpi1 = (t, v, s) => `<div class="kpi" style="cursor:default"><h3>${t}</h3><div class="v">${v}</div>${s ? `<p class="sub" style="margin:0">${s}</p>` : ""}</div>`;
   $("#l0").innerHTML = `<div class="kpis">${kpi1("Especializações cadastradas", fmt(E.length), `${uniqS(E.map(r => r.area)).length} áreas`)}${kpi1("Ativas", fmt(at.length), `${fmt(pct(at.length, E.length), 0)}% do total`)}${kpi1("Inativas", fmt(E.length - at.length))}${kpi1("Vagas (ativas)", fmt(sum(at, "vagas")))}${kpi1("Carga horária mediana (ativas)", fmt(mediana(at.map(r => r.ch)), 0), "horas, sem distorção das residências")}${kpi1("Residências (ativas)", fmt(at.filter(r => /resid[eê]ncia/i.test(r.nome)).length), "médicas e multiprofissionais (5.760 h ou mais)")}${kpi1("Cursos a distância (ativos)", fmt(at.filter(r => r.modalidade === "EAD").length), `${fmt(at.filter(r => r.modalidade !== "EAD").length)} presenciais`)}</div>`;
-  grafico("l1", "bar", mods, ["Ativo", "Inativo"].map((s, i) => barra(s, i ? cssVar("--c-br") : cssVar("--c-se"), mods.map(m => E.filter(r => r.sit === s && r.modalidade === m).length))), { stacked: true, dec: 0, legend: true });
+  grafico("l1", "bar", mods, ["Ativo", "Inativo"].map((s, i) => barra(s, i ? DV.neu : AZUL(),mods.map(m => E.filter(r => r.sit === s && r.modalidade === m).length))), { stacked: true, dec: 0, legend: true });
   const conta = k => Object.entries(x.reduce((m, r) => ((m[r[k] || "Não informado"] = (m[r[k] || "Não informado"] || 0) + 1), m), {})).sort((a, b) => b[1] - a[1]);
   const ar = conta("area").slice(0, 12), mu = conta("campus").slice(0, 10);
-  grafico("l2", "bar", ar.map(a => a[0]), [barra("Cursos", cssVar("--c-se"), ar.map(a => a[1]))], { dec: 0, horizontal: true });
-  grafico("l3", "bar", mu.map(a => a[0]), [barra("Cursos", cssVar("--c-br"), mu.map(a => a[1]))], { dec: 0, horizontal: true });
+  grafico("l2", "bar", ar.map(a => a[0]), [barra("Cursos", AZUL(), ar.map(a => a[1]))], { dec: 0, horizontal: true });
+  grafico("l3", "bar", mu.map(a => a[0]), [barra("Cursos", AZUL(), mu.map(a => a[1]))], { dec: 0, horizontal: true });
   const faixas = [["até 360 h", r => r.ch <= 360], ["361–450 h", r => r.ch > 360 && r.ch <= 450], ["451–600 h", r => r.ch > 450 && r.ch <= 600], ["mais de 600 h", r => r.ch > 600]];
-  grafico("l4", "bar", faixas.map(a => a[0]), [barra("Cursos", cssVar("--c-u"), faixas.map(([, fn]) => x.filter(r => r.ch != null && fn(r)).length))], { dec: 0 });
+  grafico("l4", "bar", faixas.map(a => a[0]), [barra("Cursos", AZUL(), faixas.map(([, fn]) => x.filter(r => r.ch != null && fn(r)).length))], { dec: 0 });
 
   const cols = [{ h: "Curso", t: 1 }, { h: "Área", t: 1 }, { h: "Modalidade", t: 1 }, { h: "Município", t: 1 }, { h: "Situação", t: 1, f: v => `<span class="pill ${v === "Ativo" ? "em_dia" : ""}">${esc(v)}</span>` }, { h: "Vagas", f: v => fmt(v) }, { h: "Carga horária", f: v => fmt(v) }, { h: "Duração (meses)", f: v => fmt(v) }];
   tabela($("#l-tab"), cols, x.map(r => ({ id: r.cod, v: [r.nome, r.area, r.modalidade, r.campus, r.sit, r.vagas, r.ch, r.dur] })), { ordem: 0 });
@@ -733,7 +872,7 @@ ABAS.niveis = el => {
 
   const sufx = M[ind].suf, dec = M[ind].dec;
   grafico("n1", "bar", NIVEIS.map(n => n[1]), GRUPOS.map(x => barra(x.nome, cssVar(x.cor), NIVEIS.map(([n]) => { const v = valN(ind, x, a, n); return v === 0 && M[ind].kind === "soma" ? null : v; }))), { suf: sufx, dec, legend: true });
-  const pal = [cssVar("--c-se"), cssVar("--c-br"), cssVar("--c-u"), "#6db3f2"];
+  const pal = CAT();
   grafico("n2", "line", anos.map(String), NIVEIS.map(([n, t], i) => linha(t, pal[i], anos.map(y => { const v = valN(ind, g, y, n); return v === 0 && M[ind].kind === "soma" ? null : v; }), i === 0)), { suf: sufx, dec, legend: true });
   grafico("n3", "line", anos.map(String), GRUPOS.map(x => linha(x.nome, cssVar(x.cor), anos.map(y => { const v = valN(ind, x, y, nv); return v === 0 && M[ind].kind === "soma" ? null : v; }), x.k === "u")), { suf: sufx, dec, legend: true });
   grafico("n4", "bar", GRUPOS.map(x => x.nome), NIVEIS.map(([n, t], i) => barra(t, pal[i], GRUPOS.map(x => { const tot = valN("mat", x, a, ""); return pct(valN("mat", x, a, n), tot); }))), { stacked: true, suf: "%", legend: true, horizontal: true });
@@ -751,7 +890,7 @@ ABAS.redes = el => {
       <h3>${esc(cap(p.nome))}</h3>
       <div class="sub" style="margin:0">Coordenação: <b>${esc(u.ies)}</b> · ${esc(cap(u.ga))}</div>
       <div class="nums"><div><b>${fmt(s.mat)}</b><span>matriculados</span></div><div><b>${fmt(s.tit)}</b><span>titulados</span></div><div><b>${fmt(s.perm)}</b><span>docentes perm.</span></div></div>
-      <div class="tl">${ANOS.map(a => `<i style="background:${p.anos[a] ? CORC[p.anos[a].conc] || "#94a3b8" : "var(--line)"}" title="${a}">${p.anos[a] ? p.anos[a].conc : "·"}</i>`).join("")}</div>
+      ${tlinha(p)}
       <div class="sub" style="margin:0">${u.associadas.length ? `${u.associadas.length} IES associadas${u.associadas.length < 14 ? ": " + esc(u.associadas.join(", ")) : ""}` : ""}</div></button>`;
   };
   el.innerHTML = `<h2 class="sec">Programas em rede com participação da UFSCar</h2>
@@ -772,7 +911,6 @@ const NAT = { FEDERAL: "Federal", ESTADUAL: "Estadual", MUNICIPAL: "Municipal", 
 const jurSel = () => new Set(S.rkJur ?? (S.univ === "fed" ? ["FEDERAL"] : JUR.map(j => j[0])));
 const jurTxt = () => { const s = jurSel(); return s.size === 4 ? "todas as naturezas" : JUR.filter(j => s.has(j[0])).map(j => j[1].toLowerCase()).join(", "); };
 const RK = ["prog", "mat", "ing", "tit", "perm", "razao", "conc", "meses"];
-const paleta = () => [cssVar("--c-u"), cssVar("--c-se"), cssVar("--c-br"), "#6db3f2", "#0f4a85", "#c9a227", "#8aa4c8", "#5d6877"];
 ABAS.ranking = el => {
   const ref = S.a1, a0 = S.a0;
   const todas = [...new Set(Y.disc_a[ref].map(r => r.ies).filter(Boolean))].filter(s => D.ies[s]);
@@ -799,10 +937,11 @@ ABAS.ranking = el => {
     <div id="k-area"></div>`;
   const draw = () => {
     const k = S.rkMetric, anos = anosRange(), idx = S.rkModo === "idx" && M[k].kind === "soma";
-    $("#k-leg").innerHTML = S.sel.map((s, i) => `<button data-s="${s}" title="Remover"><i class="dot" style="background:${paleta()[i]}"></i>${esc(s)} ×</button>`).join("");
+    const outrasSel = S.sel.filter(s => s !== U), corI = s => s === U ? cssVar("--c-u") : CAT()[outrasSel.indexOf(s) % 9];
+    $("#k-leg").innerHTML = S.sel.map(s => `<button data-s="${s}" title="Remover ${esc(s)} do gráfico"><i class="dot" style="background:${corI(s)}"></i>${esc(s)} ×</button>`).join("");
     $$("#k-leg button").forEach(b => b.onclick = () => { S.sel = S.sel.filter(x => x !== b.dataset.s); if (!S.sel.length) S.sel = [U]; draw(); marca(); });
     destruirUm("k-g");
-    grafico("k-g", "line", anos.map(String), S.sel.map((s, i) => { const v = serieDe(k, gI(s), anos); return linha(s, paleta()[i], idx ? v.map(x => v[0] ? 100 * x / v[0] : null) : v, s === U); }), { suf: M[k].suf, dec: idx ? 1 : M[k].dec, legend: true });
+    grafico("k-g", "line", anos.map(String), S.sel.map((s, i) => { const v = serieDe(k, gI(s), anos); return linha(s, corI(s), idx ? v.map(x => v[0] ? 100 * x / v[0] : null) : v, s === U); }), { suf: M[k].suf, dec: idx ? 1 : M[k].dec, legend: true });
     $("#k-ies").value = S.sel.find(s => s !== U) || "";
   };
   const marca = () => $$("#k-tab tbody tr").forEach(tr => tr.classList.toggle("sel", S.sel.includes(tr.dataset.id)));
@@ -945,10 +1084,25 @@ function decorarFiguras() {
     const cv = card.querySelector("canvas"); if (!cv || card.querySelector(".fig-top")) return;
     n++;
     const top = document.createElement("div"); top.className = "fig-top";
-    top.innerHTML = `<span class="fig-num">FIGURA ${String(n).padStart(2, "0")}</span><button type="button" class="btn-outline mini" title="Baixar os dados desta figura em CSV">CSV</button>`;
+    top.innerHTML = `<span class="fig-num">FIGURA ${String(n).padStart(2, "0")}</span><span class="fig-acoes"><button type="button" class="btn-outline mini b-tab" aria-expanded="false" title="Mostrar os valores desta figura em uma tabela">Ver tabela</button><button type="button" class="btn-outline mini b-csv" title="Baixar os dados desta figura em CSV">CSV</button></span>`;
     card.prepend(top);
-    top.querySelector("button").onclick = () => csvGrafico(cv.id, card.querySelector("h3")?.innerText || "figura");
+    const titulo = () => card.querySelector("h3")?.innerText || "figura";
+    top.querySelector(".b-csv").onclick = () => csvGrafico(cv.id, titulo());
+    top.querySelector(".b-tab").onclick = e => tabelaGrafico(card, cv.id, titulo(), e.currentTarget);
   });
+}
+// alternativa textual de qualquer gráfico: tabela com os mesmos valores
+function tabelaGrafico(card, id, titulo, btn) {
+  const aberta = card.querySelector(".fig-tab");
+  if (aberta) { aberta.remove(); btn.setAttribute("aria-expanded", "false"); btn.textContent = "Ver tabela"; return; }
+  const c = charts[id]; if (!c) return;
+  const { labels, datasets } = c.data;
+  const n = v => v == null || Number.isNaN(+v) ? "–" : fmt(+v, Number.isInteger(+v) ? 0 : 2);
+  const div = document.createElement("div"); div.className = "fig-tab";
+  div.innerHTML = `<table><caption>${esc(titulo)}: valores do gráfico</caption><thead><tr><th class="t" scope="col">Categoria</th>${datasets.map(d => `<th scope="col">${esc(d.label || "Valor")}</th>`).join("")}</tr></thead>
+    <tbody>${labels.map((l, i) => `<tr><th class="t" scope="row" style="position:static;background:none;border-bottom:1px solid var(--line-2);font-weight:600;color:var(--ink)">${esc(l)}</th>${datasets.map(d => `<td>${n(d.data[i])}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  card.querySelector(".graf, .p3d")?.after(div);
+  btn.setAttribute("aria-expanded", "true"); btn.textContent = "Ocultar tabela";
 }
 function sincFiltros() {
   $("#f-area").value = S.area; $("#f-grau").value = S.grau; $("#f-sem").checked = S.sem; $("#f-ano").value = S.ano;
@@ -966,7 +1120,7 @@ function chipsFiltros() {
   $$(".chip-out", el).forEach(b => b.onclick = () => { l[+b.dataset.i][1](); sincFiltros(); render(); });
 }
 function render() {
-  destruir(); memo = new Map(); GRUPOS = grupos(); notaRede();
+  destruir(); destruir3d(); aplicaTema(); memo = new Map(); GRUPOS = grupos(); notaRede();
   $("#ano-txt").textContent = S.ano;
   $$("#abas button").forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
   $$(".tab").forEach(t => t.hidden = t.id !== "tab-" + S.tab);
